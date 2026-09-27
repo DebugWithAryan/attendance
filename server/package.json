@@ -11,6 +11,8 @@
     "dev": "node --watch src/main.js",
     "migrate": "node src/infra/db/migrate.js",
     "seed": "node src/infra/db/seed.js",
+    "seed:demo": "node src/infra/db/seed-demo.js",
+    "timetable:import": "node src/infra/db/import-timetable.js",
     "test:e2e": "node test/e2e.mjs"
   },
   "dependencies": {

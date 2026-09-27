@@ -25,7 +25,8 @@ export async function notify(recipients, message, db = pool) {
   );
 }
 
-export function listActivity({ from, to, action, actorId, limit = 100, offset = 0 }, db = pool) {
+/** `withoutSignIns` keeps a busy demo's sign-ins out of a summary feed; the full trail keeps them. */
+export function listActivity({ from, to, action, actorId, limit = 100, offset = 0, withoutSignIns = false }, db = pool) {
   return db.query(
     `select a.*, u.name as actor_name, u.login_id as actor_login_id
        from activity_log a left join users u on u.id = a.actor_id
@@ -33,9 +34,10 @@ export function listActivity({ from, to, action, actorId, limit = 100, offset = 
         and ($2::date is null or a.created_at < ($2::date + 1))
         and ($3::text is null or a.action_type = $3)
         and ($4::uuid is null or a.actor_id = $4)
+        and (not $7::boolean or a.action_type not like 'auth.%')
       order by a.created_at desc
       limit $5 offset $6`,
-    [from ?? null, to ?? null, action ?? null, actorId ?? null, limit, offset],
+    [from ?? null, to ?? null, action ?? null, actorId ?? null, limit, offset, withoutSignIns],
   ).then((r) => r.rows);
 }
 

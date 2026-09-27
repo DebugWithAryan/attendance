@@ -16,14 +16,16 @@
     "test:first-run": "npm run build:test && node test/first-run.mjs"
   },
   "dependencies": {
+    "qrcode-generator": "^2.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.8",
     "jsdom": "^25.0.1",
+    "jsqr": "^1.4.0",
+    "vite": "^5.4.8",
     "vite-plugin-singlefile": "^2.0.2"
   }
 }

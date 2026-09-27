@@ -78,6 +78,14 @@ export const teacherProfile = (userId, db = pool) =>
     [userId],
   ).then((r) => r.rows[0] || null);
 
+/** Active students of one section: who hears about a change to its classes. */
+export const studentIdsInSection = (sectionId, db = pool) =>
+  db.query(
+    `select s.user_id from students s join users u on u.id = s.user_id and u.status = 'active'
+      where s.section_id = $1`,
+    [sectionId],
+  ).then((r) => r.rows.map((x) => x.user_id));
+
 export const idsByRole = (role, db = pool) =>
   db.query(`select id from users where role = $1 and status = 'active'`, [role])
     .then((r) => r.rows.map((x) => x.id));
@@ -112,3 +120,11 @@ export const loginLockedUntil = (loginId, db = pool) =>
 
 export const clearLoginFailures = (loginId, db = pool) =>
   db.query('delete from login_attempts where login_id = lower($1)', [loginId]);
+
+/** The featured demo accounts that exist and are active, for the sign-in page. */
+export const demoAccounts = (loginIds, db = pool) =>
+  db.query(
+    `select id, name, login_id, role from users
+      where is_demo and status = 'active' and login_id = any($1::text[])`,
+    [loginIds],
+  ).then((r) => r.rows);

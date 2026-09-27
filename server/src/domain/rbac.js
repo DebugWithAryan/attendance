@@ -17,6 +17,9 @@ export const CAPABILITIES = {
   'courses.manage':      ['admin', 'hod'],
   'schedule.manage':     ['admin', 'hod'],
   'schedule.viewAll':    ['admin', 'hod', 'teacher'],
+  // Calling classes off in advance. A teacher may cancel only their own
+  // periods; the HOD and administrator may cancel any, college-wide in one go.
+  'classes.cancel':      ['admin', 'hod', 'teacher'],
   'allocation.manage':   ['admin', 'hod'],
   'criteria.manage':     ['admin', 'hod'],
   // attendance

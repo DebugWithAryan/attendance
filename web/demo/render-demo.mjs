@@ -58,6 +58,33 @@ for (const [role, paths] of Object.entries(PAGES)) {
     else { pass += 1; real(`  ok   ${path} — ${text.replace(/\s+/g, ' ').slice(55, 135)}`); }
   }
 }
+// Signed out: the sign-in page and the introduction page must render from the
+// mock alone. A public call the mock rejects with a 401 makes the real app
+// reload itself, over and over, which jsdom would not show any other way.
+real('\nsigned out');
+const answered401 = [];
+const mockFetch = dom.window.fetch;
+dom.window.fetch = g.fetch = async (...args) => {
+  const res = await mockFetch(...args);
+  if (res.status === 401) answered401.push(String(args[0]));
+  return res;
+};
+for (const [path, expect] of [['/', /Or try a demo account/], ['/welcome', /What it does/]]) {
+  sessionStorage.clear();
+  errors.length = 0;
+  answered401.length = 0;
+  const host = document.getElementById('root');
+  const root = mount(host, path);
+  await sleep(900);
+  const text = (host.textContent || '').replace(/\s+/g, ' ');
+  root.unmount();
+  const bad = errors.filter((e) => !/Future Flag|not wrapped in act/.test(e));
+  if (bad.length) { fail += 1; real(`  FAIL ${path} — ${bad[0].slice(0, 200)}`); }
+  else if (answered401.length) { fail += 1; real(`  FAIL ${path} — ${answered401[0]} answered 401 while signed out`); }
+  else if (!expect.test(text)) { fail += 1; real(`  FAIL ${path} — ${text.slice(0, 120)}`); }
+  else { pass += 1; real(`  ok   ${path} — ${text.slice(0, 80)}`); }
+}
+
 console.error = real;
 console.log(`\n${pass} demo pages rendered, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

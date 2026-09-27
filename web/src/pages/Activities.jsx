@@ -6,8 +6,11 @@ import { Empty, Loading, PageHead, Problem, Select, when } from '../components/B
 const ACTIONS = [
   'attendance.saved', 'attendance.edited', 'attendance.override', 'attendance.credited',
   'attendance.credit_override', 'leave.applied', 'leave.approved', 'leave.rejected',
+  'leave.decision_revised', 'leave.document_viewed',
+  'class.cancelled', 'class.restored',
   'records.exported', 'user.created', 'user.removed', 'allocation.class_teacher',
-  'criteria.updated', 'schedule.slot_saved', 'event.created', 'club.created', 'notification.posted',
+  'criteria.updated', 'schedule.slot_saved', 'schedule.slot_removed', 'schedule.settings_updated',
+  'event.created', 'event.attendance_added', 'club.created', 'notification.posted', 'auth.demo_login',
 ];
 
 /** HOD-only. One table, every consequential action, newest first. */

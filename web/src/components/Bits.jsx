@@ -1,4 +1,5 @@
 /** Shared scraps: headings, loading and empty states, pickers, figures. */
+import { useEffect, useState } from 'react';
 
 export function PageHead({ title, note, children }) {
   return (
@@ -89,3 +90,95 @@ export const pct = (v) => (v === null || v === undefined ? '—' : `${Number(v).
 export const when = (ts) => (ts ? new Date(ts).toLocaleString(undefined, {
   day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
 }) : '');
+
+export const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+// Local calendar date. toISOString() would show yesterday to anyone using the
+// app before 05:30 IST.
+export const localToday = () => new Date().toLocaleDateString('en-CA');
+
+/** "Fri, 2 Oct" for a YYYY-MM-DD calendar date, whatever the browser's zone. */
+export const shortDate = (iso) => (iso ? new Date(`${String(iso).slice(0, 10)}T00:00:00Z`).toLocaleDateString(undefined, {
+  weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
+}) : '');
+
+/** 1..n, for period pickers that follow the course's day. */
+export const periodList = (n) => Array.from({ length: Math.max(1, Math.min(12, Number(n) || 8)) }, (_, i) => i + 1);
+
+/** "P3", "P3–5", "P1, P3" */
+export const periodsLabel = (periods = []) => {
+  const list = [...periods].map(Number).sort((a, b) => a - b);
+  if (!list.length) return 'all day';
+  const contiguous = list.every((p, i) => i === 0 || p === list[i - 1] + 1);
+  if (contiguous && list.length > 2) return `P${list[0]}\u2013${list.at(-1)}`;
+  return list.map((p) => `P${p}`).join(', ');
+};
+
+/**
+ * The attendance badge: a seal on the register for students at or above the
+ * threshold. Below it, the same spot tells them how close they are, which is
+ * the motivating half of the idea.
+ */
+export function AttendanceBadge({ badge, compact = false }) {
+  if (!badge) return null;
+  if (!badge.earned) {
+    if (badge.current === null || badge.current === undefined || !badge.needed) return null;
+    return (
+      <p className="badge-hint">
+        <span aria-hidden="true">{'\u2606'}</span> Attend {badge.needed} more {badge.needed === 1 ? 'class' : 'classes'} in a row
+        to earn the {badge.threshold}% attendance badge.
+      </p>
+    );
+  }
+  return (
+    <div className={`seal${compact ? ' compact' : ''}`} role="img"
+      aria-label={`Attendance badge: ${badge.threshold} percent or more`}>
+      <span className="star" aria-hidden="true">{'\u2605'}</span>
+      <span className="seal-text">
+        <strong>{badge.threshold}%+ attendance</strong>
+        {!compact && <span>Badge earned. Keep it up.</span>}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * A QR code drawn as SVG. The encoder is loaded only when a QR code is on
+ * screen, so it adds nothing to the bundle every other page pays for. It is
+ * always dark on white, because a scanner needs the contrast in dark mode too.
+ */
+export function QrCode({ value, size = 200, label }) {
+  const [shape, setShape] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    setShape(null);
+    import('qrcode-generator').then(({ default: qrcode }) => {
+      const qr = qrcode(0, 'M');
+      qr.addData(value);
+      qr.make();
+      const n = qr.getModuleCount();
+      const quiet = 4;
+      let d = '';
+      for (let r = 0; r < n; r += 1) {
+        for (let c = 0; c < n; c += 1) {
+          if (qr.isDark(r, c)) d += `M${c + quiet},${r + quiet}h1v1h-1z`;
+        }
+      }
+      if (live) setShape({ d, box: n + quiet * 2 });
+    }).catch(() => { if (live) setFailed(true); });
+    return () => { live = false; };
+  }, [value]);
+
+  if (failed) return <p className="label">The QR code could not be drawn here. Share this link instead: {value}</p>;
+  if (!shape) return <span className="skeleton" style={{ width: size, height: size, borderRadius: 4 }} />;
+  return (
+    <svg className="qr" role="img" aria-label={label || `QR code linking to ${value}`}
+      viewBox={`0 0 ${shape.box} ${shape.box}`} width={size} height={size}
+      shapeRendering="crispEdges" data-value={value}>
+      <rect width={shape.box} height={shape.box} fill="#ffffff" />
+      <path d={shape.d} fill="#000000" />
+    </svg>
+  );
+}

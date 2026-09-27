@@ -35,3 +35,7 @@ export const addMember = (clubId, studentId, addedBy, db = pool) =>
 export const removeMember = (clubId, studentId, db = pool) =>
   db.query('delete from club_members where club_id = $1 and student_id = $2 returning *', [clubId, studentId])
     .then((r) => r.rows[0] || null);
+
+export const isMember = (clubId, studentId, db = pool) =>
+  db.query('select 1 from club_members where club_id = $1 and student_id = $2', [clubId, studentId])
+    .then((r) => r.rowCount > 0);

@@ -47,6 +47,13 @@ export const config = {
 
   editWindowHours: num(process.env.EDIT_WINDOW_HOURS, 48),
   defaultMinAttendance: num(process.env.DEFAULT_MIN_ATTENDANCE, 75),
+  // Students at or above this overall percentage earn the attendance badge.
+  badgeThreshold: num(process.env.BADGE_THRESHOLD, 90),
+
+  // Public demonstrations (a tech fest stall). Turns on one-tap sign-in for
+  // the accounts `npm run seed:demo` creates. Never set it on a real college's
+  // deployment: anyone who opens the site can then sign in as a demo HOD.
+  demoMode: /^(1|true|yes|on)$/i.test(process.env.DEMO_MODE || ''),
 
   loginMaxAttempts: num(process.env.LOGIN_MAX_ATTEMPTS, 8),
   loginWindowMinutes: num(process.env.LOGIN_WINDOW_MINUTES, 15),

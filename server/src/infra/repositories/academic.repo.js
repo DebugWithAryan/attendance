@@ -6,6 +6,23 @@ export const listCourses = (db = pool) =>
               from courses c left join attendance_criteria ac on ac.course_id = c.id
              order by c.name`).then((r) => r.rows);
 
+export const findCourse = (id, db = pool) =>
+  db.query('select * from courses where id = $1', [id]).then((r) => r.rows[0] || null);
+
+export const findSection = (id, db = pool) =>
+  db.query('select * from sections where id = $1', [id]).then((r) => r.rows[0] || null);
+
+export const findSubject = (id, db = pool) =>
+  db.query('select * from subjects where id = $1', [id]).then((r) => r.rows[0] || null);
+
+/** The shape of the course's week: days, periods, and the printed timings. */
+export const setWeek = (courseId, { periodsPerDay, daysPerWeek, timings }, db = pool) =>
+  db.query(
+    `update courses set periods_per_day = $2, days_per_week = $3, timings = $4
+      where id = $1 returning *`,
+    [courseId, periodsPerDay, daysPerWeek, timings === null ? null : JSON.stringify(timings)],
+  ).then((r) => r.rows[0] || null);
+
 export const insertCourse = (name, createdBy, db = pool) =>
   db.query('insert into courses (name, created_by) values ($1,$2) returning *', [name, createdBy])
     .then((r) => r.rows[0]);

@@ -111,6 +111,7 @@ export async function createUser(actor, input) {
 export async function removeUser(actor, userId) {
   const target = await users.findById(userId);
   if (!target) throw notFound('That account does not exist.');
+  if (target.is_demo) throw forbidden('Demo accounts cannot be removed: other visitors are using them.');
   if (target.id === actor.id) throw badRequest('You cannot remove your own account.');
   if (actor.role === 'teacher' && !['student', 'mentor'].includes(target.role)) {
     throw forbidden('Teachers can only remove student and mentor accounts.');
@@ -216,6 +217,7 @@ export async function setCriteria(actor, { courseId, percentage }) {
 export async function resetPassword(actor, userId, { password }) {
   const target = await users.findById(userId);
   if (!target || target.status !== 'active') throw notFound('That account does not exist.');
+  if (target.is_demo) throw forbidden('Demo accounts keep their shared password so every visitor can sign in.');
   if (actor.role === 'teacher' && !['student', 'mentor'].includes(target.role)) {
     throw forbidden('Teachers can only reset student and mentor passwords.');
   }

@@ -20,6 +20,12 @@ export function AuthProvider({ children }) {
       setToken(res.token);
       setUser(await api.get('/auth/me'));
     },
+    // One tap into a shared demo account; only works while the deployment runs DEMO_MODE.
+    async signInDemo(loginId) {
+      const res = await api.post('/demo/login', { loginId });
+      setToken(res.token);
+      setUser(await api.get('/auth/me'));
+    },
     signOut() {
       setToken(null);
       setUser(null);

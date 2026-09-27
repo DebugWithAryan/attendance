@@ -2,7 +2,7 @@ import * as users from '../infra/repositories/user.repo.js';
 import { pool } from '../infra/db/pool.js';
 import { verifyPassword, hashPassword } from '../infra/security/password.js';
 import { logActivity } from '../infra/repositories/audit.repo.js';
-import { unauthorized, badRequest, AppError } from '../shared/errors.js';
+import { unauthorized, badRequest, forbidden, AppError } from '../shared/errors.js';
 import { config } from '../config/index.js';
 
 /**
@@ -43,10 +43,13 @@ export async function login({ loginId, password }) {
   await logActivity({ actorId: user.id, actorRole: user.role, action: 'auth.login', entity: 'user', targetId: user.id });
   return {
     id: user.id, name: user.name, loginId: user.login_id, role: user.role, canAddUsers: user.can_add_users,
+    isDemo: user.is_demo === true,
   };
 }
 
 export async function changePassword(actor, { currentPassword, newPassword }) {
+  // Everyone at the demo stall signs in with the same printed password.
+  if (actor.isDemo) throw forbidden('This is a shared demo account, so its password stays the same for the next visitor.');
   if (String(newPassword).length < 8) throw badRequest('Use at least 8 characters.');
   const user = await users.findById(actor.id);
   if (!(await verifyPassword(currentPassword, user.password_hash))) {

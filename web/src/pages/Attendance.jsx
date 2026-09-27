@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { api, qs } from '../api.js';
 import { useApi } from '../hooks.js';
-import { Done, Empty, Loading, PageHead, Problem, Select, when } from '../components/Bits.jsx';
+import { Done, Empty, Loading, PageHead, Problem, Select, localToday, periodList, when } from '../components/Bits.jsx';
 
 const STATUSES = [
   { key: 'present', short: 'P' },
@@ -11,7 +11,7 @@ const STATUSES = [
 
 // Local calendar date. toISOString() would show yesterday to anyone marking
 // attendance before 05:30 IST.
-const today = () => new Date().toLocaleDateString('en-CA');
+const today = localToday;
 
 /**
  * The marking screen. Cascading pickers, then a ledger the teacher can run down
@@ -36,6 +36,13 @@ export default function Attendance() {
   const roster = useApi(ready ? `/attendance/roster${qs({ sectionId, classDate, periodNumber: period })}` : null, { skip: !ready });
 
   const students = roster.data?.students || [];
+  const cancelled = roster.data?.cancelled;
+  const registerTaken = roster.data?.session?.status === 'held';
+  // The period picker is as long as the chosen course's day.
+  const chosenCourse = (courses.data || []).find((c) => c.id === courseId);
+  const periodsPerDay = chosenCourse?.periods_per_day;
+  const periodTime = (p) => chosenCourse?.timings?.periods?.[p - 1];
+  const [cancelling, setCancelling] = useState(null);
   const current = (s) => marks[s.studentId] ?? s.status ?? null;
 
   const tally = useMemo(() => students.reduce((acc, s) => {
@@ -57,6 +64,39 @@ export default function Attendance() {
       });
       setSaved(`Saved ${res.saved} students.`);
       setMarks({});
+      await roster.reload();
+    } catch (err) {
+      setSaveError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // A teacher calling off their own class, and taking it back.
+  const cancelClass = async () => {
+    setBusy(true);
+    setSaveError(null);
+    try {
+      const res = await api.post('/classes/cancel', {
+        date: classDate, sectionId, periods: [Number(period)], reason: cancelling.reason.trim() || undefined,
+      });
+      if (!res.batchId) throw new Error(`Not cancelled: ${res.skipped.map((x) => x.reason).join(', ')}.`);
+      setCancelling(null);
+      setSaved('Class cancelled. The students, and the HOD, have been told.');
+      await roster.reload();
+    } catch (err) {
+      setSaveError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const restoreClass = async () => {
+    setBusy(true);
+    setSaveError(null);
+    try {
+      await api.del(`/classes/cancellations/${cancelled.batchId}`);
+      setSaved('The class is back on. Take the register as usual.');
       await roster.reload();
     } catch (err) {
       setSaveError(err.message);
@@ -95,8 +135,8 @@ export default function Attendance() {
               Date
               <input type="date" value={classDate} onChange={(e) => { setClassDate(e.target.value); setMarks({}); }} />
             </label>
-            <Select label="Period" value={period} options={[1, 2, 3, 4, 5, 6, 7, 8].map((p) => ({ value: String(p), label: `Period ${p}` }))}
-              onChange={(v) => { setPeriod(v); setMarks({}); }} />
+            <Select label="Period" value={period} options={periodList(periodsPerDay).map((p) => ({ value: String(p), label: periodTime(p) ? `Period ${p} · ${periodTime(p)}` : `Period ${p}` }))}
+              onChange={(v) => { setPeriod(v); setMarks({}); setCancelling(null); }} />
           </div>
         </div>
 
@@ -107,7 +147,40 @@ export default function Attendance() {
         {ready && roster.loading && <Loading what="Loading roster" />}
         {ready && roster.error && <Problem>{roster.error}</Problem>}
 
-        {ready && !roster.loading && students.length > 0 && (
+        {ready && !roster.loading && cancelled && (
+          <div className="notice bad">
+            <strong>This class is cancelled.</strong>{' '}
+            {cancelled.reason ? `${cancelled.reason}. ` : ''}Cancelled by {cancelled.by}, so there is no register to take
+            and it does not count towards anyone&apos;s attendance.
+            <div style={{ marginTop: '0.5rem' }}>
+              <button className="quiet" onClick={restoreClass} disabled={busy}>Restore this class</button>
+            </div>
+          </div>
+        )}
+
+        {ready && !roster.loading && !cancelled && !registerTaken && students.length > 0 && (
+          cancelling ? (
+            <div className="notice">
+              <div className="row">
+                <label className="field" style={{ flex: 1, minWidth: '14rem' }}>
+                  Why is this class not happening? (optional)
+                  <input value={cancelling.reason} autoFocus maxLength={200}
+                    onChange={(e) => setCancelling({ reason: e.target.value })} placeholder="Attending a workshop" />
+                </label>
+                <button className="danger" onClick={cancelClass} disabled={busy}>Cancel this class</button>
+                <button className="quiet" onClick={() => setCancelling(null)}>Keep it</button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <button className="link" onClick={() => setCancelling({ reason: '' })}>
+                Not taking this class? Cancel it instead
+              </button>
+            </div>
+          )
+        )}
+
+        {ready && !roster.loading && !cancelled && students.length > 0 && (
           <div className="panel">
             <header>
               <h3>{students.length} students</h3>
@@ -161,6 +234,11 @@ export default function Attendance() {
                   {' · '}<strong>{tally.leave || 0}</strong> leave
                   {tally.unmarked ? ` · ${tally.unmarked} not marked` : ''}
                 </span>
+                {tally.unmarked > 0 && (
+                  <span className="label unmarked-hint">
+                    Anyone left unmarked counts as missing this class once it is saved.
+                  </span>
+                )}
                 <span className="progress" aria-hidden="true">
                   <span style={{ width: `${Math.round(((students.length - (tally.unmarked || 0)) / Math.max(1, students.length)) * 100)}%` }} />
                 </span>

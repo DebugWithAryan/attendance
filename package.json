@@ -8,6 +8,8 @@
   "scripts": {
     "migrate": "node server/src/infra/db/migrate.js",
     "seed": "node server/src/infra/db/seed.js",
+    "seed:demo": "node server/src/infra/db/seed-demo.js",
+    "timetable:import": "node server/src/infra/db/import-timetable.js",
     "dev:api": "npm --prefix server run dev",
     "dev:web": "npm --prefix web run dev",
     "build": "npm --prefix web install && npm --prefix web run build",

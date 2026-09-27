@@ -51,4 +51,28 @@ echo "--- administrator suite"
 cd "$ROOT"
 API_BASE="http://127.0.0.1:$PORT/api" node server/test/admin.mjs
 
+# After everything else for the same reason: these add a course, a club, 2027
+# registers and the D2 BBA routine.
+echo "--- timetable, cancellation, classes held, badge, event attendance, routine import"
+API_BASE="http://127.0.0.1:$PORT/api" node server/test/features.mjs
+cd web
+API_ORIGIN="http://127.0.0.1:$PORT" node test/features.mjs
+cd "$ROOT"
+
+# The tech fest demo needs a database of its own: seed:demo refuses one that
+# already has accounts. Point DEMO_DATABASE_URL at an empty one to include it.
+if [ -n "$DEMO_DATABASE_URL" ]; then
+  DEMO_PORT=$((PORT + 1))
+  echo "--- demo college (DEMO_MODE on :$DEMO_PORT)"
+  DATABASE_URL="$DEMO_DATABASE_URL" node server/src/infra/db/migrate.js
+  DATABASE_URL="$DEMO_DATABASE_URL" node server/src/infra/db/seed-demo.js --reset
+  DATABASE_URL="$DEMO_DATABASE_URL" DEMO_MODE=1 PORT=$DEMO_PORT node scripts/vercel-sim.mjs > /tmp/vercel-sim-demo.log 2>&1 &
+  DEMO_SIM=$!
+  trap 'kill $SIM $DEMO_SIM 2>/dev/null' EXIT
+  sleep 3
+  API_BASE="http://127.0.0.1:$DEMO_PORT/api" node server/test/demo.mjs
+else
+  echo "--- demo college skipped: set DEMO_DATABASE_URL to an empty database to include it"
+fi
+
 echo "--- all suites passed"

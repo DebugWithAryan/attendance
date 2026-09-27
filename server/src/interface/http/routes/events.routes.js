@@ -25,6 +25,13 @@ export default async function eventRoutes(app) {
 
   app.post('/events/:id/join', joiner, (req) => eventsService.requestJoin(req.actor, req.params.id));
 
+  // The organiser records who took part, by login ID, and the credit applies at once.
+  app.post('/events/:id/attendance', poster, (req) =>
+    eventsService.addAttendance(req.actor, parse(z.object({ id: z.string().uuid() }), req.params).id, parse(z.object({
+      loginIds: z.array(z.string().trim().min(1).max(64)).min(1, 'Enter at least one student login ID.')
+        .max(300, 'Add up to 300 students at a time.'),
+    }), req.body)));
+
   app.patch('/events/requests/:id', poster, (req) =>
     eventsService.decideJoin(req.actor, req.params.id, parse(z.object({
       status: z.enum(['approved', 'rejected']),

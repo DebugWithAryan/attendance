@@ -31,6 +31,9 @@ export default function Records() {
 
   const data = rows.data || [];
   const below = data.filter((r) => r.belowMinimum).length;
+  const badged = data.filter((r) => r.badge).length;
+  // Each section's own count of classes held in the range: the college's total.
+  const heldBySection = [...new Map(data.map((r) => [r.section_name, r.section_classes_held])).entries()];
 
   return (
     <>
@@ -61,14 +64,19 @@ export default function Records() {
             <header>
               <h3>{data.length} students</h3>
               <span className="label">{below} under the minimum</span>
+              <span className="label"><span className="star-mark" aria-hidden="true">{'\u2605'}</span> {badged} with the attendance badge</span>
             </header>
+            <p className="label held-line">
+              Classes held{from || to ? ' in this range' : ''}: {heldBySection.map(([name, n]) => `${name} ${n}`).join(' \u00b7 ')}.
+              {' '}Percentages count a held class with no mark as missed.
+            </p>
             <div className="scroll-x">
               <table>
                 <thead>
                   <tr>
                     <th>Roll</th><th>Name</th><th>Login ID</th><th>Section</th>
                     <th className="num">Held</th><th className="num">Present</th>
-                    <th className="num">Absent</th><th className="num">Leave</th>
+                    <th className="num">Absent</th><th className="num">Not marked</th><th className="num">Leave</th>
                     <th className="num">Attendance</th>
                   </tr>
                 </thead>
@@ -76,12 +84,16 @@ export default function Records() {
                   {data.map((r) => (
                     <tr key={r.student_id} className={r.belowMinimum ? 'flagged' : ''}>
                       <td>{r.roll_number}</td>
-                      <td>{r.name}</td>
+                      <td>
+                        {r.name}
+                        {r.badge && <span className="star-mark" title="Attendance badge" aria-label="has the attendance badge"> {'\u2605'}</span>}
+                      </td>
                       <td>{r.login_id}</td>
                       <td>{r.section_name}</td>
                       <td className="num">{r.conducted}</td>
                       <td className="num">{r.present_count}</td>
                       <td className="num">{r.absent_count}</td>
+                      <td className="num">{r.not_marked}</td>
                       <td className="num">{r.leave_count}</td>
                       <td className="num"><strong>{pct(r.percentage)}</strong></td>
                     </tr>

@@ -27,20 +27,39 @@ export const findEvent = (id, db = pool) =>
     [id],
   ).then((r) => r.rows[0] || null);
 
-/** Visibility is enforced in SQL: a members-only event never leaves the DB for a non-member. */
+/**
+ * Visibility is enforced in SQL: a members-only event never leaves the DB for a non-member.
+ *
+ * `my_credits` is what the event actually did to the viewer's register: the
+ * periods that are now marked present because of it. `credited_students`
+ * tells the organiser how many people it has credited so far.
+ */
+const CREDITS_FOR = (studentExpr) => `(
+  select coalesce(json_agg(json_build_object(
+           'period', ac.period_number, 'subject', sub.name, 'was_override', ac.was_override
+         ) order by ac.period_number), '[]'::json)
+    from attendance_credits ac
+    join attendance_records ar on ar.id = ac.attendance_record_id and ar.status = 'present'
+    left join subjects sub on sub.id = ar.subject_id
+   where ac.event_id = e.id and ac.student_id = ${studentExpr})`;
+
 export const listVisibleTo = (user, db = pool) =>
   db.query(
     `select e.*, u.name as posted_by_name, cl.name as club_name,
             coalesce(array_agg(cp.period_number order by cp.period_number)
               filter (where cp.period_number is not null), '{}'::smallint[]) as credit_periods,
             jr.status as my_request_status,
-            (select count(*) from event_join_requests x where x.event_id = e.id and x.status = 'pending') as pending_count
+            ${CREDITS_FOR('$1')} as my_credits,
+            (select count(*) from event_join_requests x where x.event_id = e.id and x.status = 'pending') as pending_count,
+            (select count(*) from event_join_requests x where x.event_id = e.id and x.status = 'approved') as approved_count,
+            (select count(distinct ac.student_id) from attendance_credits ac where ac.event_id = e.id) as credited_students,
+            (select count(*) from class_sessions cs where cs.event_id = e.id and cs.status = 'cancelled') as cancelled_classes
        from events e
        join users u on u.id = e.created_by
        left join clubs cl on cl.id = e.club_id
        left join event_credit_periods cp on cp.event_id = e.id
        left join event_join_requests jr on jr.event_id = e.id and jr.student_id = $1
-      where $2 in ('hod')
+      where $2 in ('hod', 'admin')
          or e.created_by = $1
          or e.visibility = 'all_students'
          or exists (select 1 from club_members m where m.club_id = e.club_id and m.student_id = $1)
@@ -76,8 +95,10 @@ export const decideJoin = (id, status, actorId, db = pool) =>
 
 export const listJoinRequests = (eventId, db = pool) =>
   db.query(
-    `select jr.*, u.name as student_name, s.roll_number, sec.name as section_name
+    `select jr.*, u.name as student_name, u.login_id, s.roll_number, s.section_id, sec.name as section_name,
+            ${CREDITS_FOR('jr.student_id')} as credits
        from event_join_requests jr
+       join events e on e.id = jr.event_id
        join users u on u.id = jr.student_id
        join students s on s.user_id = jr.student_id
        join sections sec on sec.id = s.section_id
@@ -85,6 +106,22 @@ export const listJoinRequests = (eventId, db = pool) =>
       order by case jr.status when 'pending' then 0 else 1 end, jr.created_at`,
     [eventId],
   ).then((r) => r.rows);
+
+/**
+ * The organiser adding a student's attendance directly: an approved request is
+ * created, or an existing pending/rejected one is approved. Returns null when
+ * the student was already approved, so nobody is credited twice.
+ */
+export const approveDirectly = (eventId, studentId, actorId, db = pool) =>
+  db.query(
+    `insert into event_join_requests (event_id, student_id, status, decided_by, decided_at)
+     values ($1, $2, 'approved', $3, now())
+     on conflict (event_id, student_id) do update
+        set status = 'approved', decided_by = $3, decided_at = now()
+      where event_join_requests.status <> 'approved'
+     returning *`,
+    [eventId, studentId, actorId],
+  ).then((r) => r.rows[0] || null);
 
 export const insertCredit = (c, db = pool) =>
   db.query(

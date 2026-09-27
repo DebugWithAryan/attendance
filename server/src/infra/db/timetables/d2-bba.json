@@ -1,0 +1,60 @@
+{
+  "title": "D2 BBA Batch — Class Routine",
+  "note": "Transcribed from the printed class routine. Teachers appear as the initials the routine uses; replace a teacher's name, or give a loginId, before importing into a real college's database.",
+  "course": "BBA",
+  "section": "D2",
+  "daysPerWeek": 5,
+  "periodsPerDay": 4,
+  "timings": {
+    "periods": ["10:15–11:15", "11:20–12:20", "12:25–1:25", "2:15–3:15"],
+    "breakAfter": 3,
+    "breakTime": "1:25–2:15",
+    "afterHoursTime": "After 3:15",
+    "afterHours": {
+      "Monday": "Mentorship & Value-Added Course",
+      "Tuesday": "Library Hours & Value-Added Course",
+      "Wednesday": "Library Hours & Value-Added Course",
+      "Thursday": "Library Hours & Value-Added Course",
+      "Friday": "Mentorship & Value-Added Course"
+    }
+  },
+  "teachers": {
+    "SS": { "name": "SS" },
+    "SC": { "name": "SC" },
+    "SMJ": { "name": "SMJ" },
+    "SBK": { "name": "SBK" },
+    "PK": { "name": "PK" },
+    "SM": { "name": "SM" },
+    "MA": { "name": "MA" },
+    "DN": { "name": "DN" },
+    "AG": { "name": "AG" },
+    "RC": { "name": "RC" },
+    "CD": { "name": "CD" }
+  },
+  "slots": [
+    { "day": "Monday", "period": 1, "subject": "Business Ethics", "teacher": "SS" },
+    { "day": "Monday", "period": 2, "subject": "Principles of Management and Organizational Behavior", "teacher": "SC" },
+    { "day": "Monday", "period": 3, "subject": "IT in Business", "teacher": "SMJ" },
+    { "day": "Monday", "period": 4, "subject": "Business Communication", "teacher": "AG" },
+
+    { "day": "Tuesday", "period": 1, "subject": "Principles of Management and Organizational Behavior", "teacher": "SC" },
+    { "day": "Tuesday", "period": 2, "subject": "IT in Business", "teacher": "SBK" },
+    { "day": "Tuesday", "period": 3, "subject": "Business Ethics", "teacher": "SS" },
+    { "day": "Tuesday", "period": 4, "subject": "Environmental Studies – 1", "teacher": "CD" },
+
+    { "day": "Wednesday", "period": 1, "subject": "Review Business Communication", "teacher": null },
+    { "day": "Wednesday", "period": 2, "subject": "Principles of Management and Organizational Behavior", "teacher": "SC" },
+    { "day": "Wednesday", "period": 3, "subject": "Business Ethics", "teacher": "SS" },
+    { "day": "Wednesday", "period": 4, "subject": "Financial Institution and Market", "teacher": "MA" },
+
+    { "day": "Thursday", "period": 1, "subject": "Business Ethics", "teacher": "SS" },
+    { "day": "Thursday", "period": 2, "subject": "Principles of Management and Organizational Behavior", "teacher": "SC" },
+    { "day": "Thursday", "period": 3, "subject": "Financial Institution and Market", "teacher": "SM" },
+    { "day": "Thursday", "period": 4, "subject": "Business Communication", "teacher": "RC" },
+
+    { "day": "Friday", "period": 1, "subject": "IT in Business", "teacher": "SMJ" },
+    { "day": "Friday", "period": 2, "subject": "IT in Business", "teacher": "PK" },
+    { "day": "Friday", "period": 3, "subject": "Constitutional Values", "teacher": "DN" },
+    { "day": "Friday", "period": 4, "subject": "Financial Institution and Market", "teacher": "SM" }
+  ]
+}

@@ -32,6 +32,8 @@ export async function authPlugin(app) {
       loginId: fresh.login_id,
       role: fresh.role,
       canAddUsers: fresh.can_add_users,
+      // A shared demo account: the UI says so, and it cannot change its password.
+      isDemo: fresh.is_demo === true,
     };
   });
 

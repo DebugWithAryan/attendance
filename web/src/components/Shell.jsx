@@ -3,7 +3,9 @@ import { useAuth } from '../auth.jsx';
 import { navFor } from '../nav.js';
 import { usePolling } from '../hooks.js';
 
-const ROLE_LABEL = { hod: 'Head of department', teacher: 'Teacher', student: 'Student', mentor: 'Mentor' };
+const ROLE_LABEL = {
+  admin: 'Administrator', hod: 'Head of department', teacher: 'Teacher', student: 'Student', mentor: 'Mentor',
+};
 
 export default function Shell({ children }) {
   const { user, signOut } = useAuth();
@@ -55,6 +57,17 @@ export default function Shell({ children }) {
           </button>
         </div>
 
+        {user.isDemo && (
+          <div className="demo-banner" role="note">
+            <span>
+              <strong>Demo account.</strong> This is a sample college for trying the app; anything you change is
+              seen by the next visitor too.
+            </span>
+            <button className="link" onClick={() => { navigate('/', { replace: true }); signOut(); }}>
+              Try another role
+            </button>
+          </div>
+        )}
         <main className="content" id="main">{children}</main>
       </div>
     </div>

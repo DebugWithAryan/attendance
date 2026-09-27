@@ -149,10 +149,21 @@ const counts = (rows) => {
   const base = present_count + absent_count;
   return {
     conducted: present_count + absent_count + leave_count,
-    present_count, absent_count, leave_count,
+    present_count, absent_count, leave_count, not_marked: 0,
     percentage: base === 0 ? null : Math.round((present_count / base) * 10000) / 100,
   };
 };
+
+// The demo marks every student in every class it holds, so "held" is simply
+// the distinct classes on record for a section.
+const heldFor = (sectionId) => new Set(db.attendance.filter((a) => a.section_id === sectionId)
+  .map((a) => `${a.class_date}:${a.period_number}`)).size;
+const BADGE = 90;
+const badgeFor = (c) => ({
+  earned: c.percentage !== null && c.percentage >= BADGE, threshold: BADGE, current: c.percentage,
+  needed: c.percentage !== null && c.percentage >= BADGE ? 0 : classesNeeded(c, BADGE).needed,
+});
+const WEEK = { days_per_week: 6, periods_per_day: 5, timings: null };
 
 const classesNeeded = (c, minimum) => {
   const base = c.present_count + c.absent_count;
@@ -184,7 +195,9 @@ function recordsFor({ courseId, sectionId, from, to }) {
         student_id: s.user_id, name: user(s.user_id).name, login_id: user(s.user_id).login_id,
         roll_number: s.roll_number, course_name: courseRow(s.course_id).name, section_name: sectionRow(s.section_id).name,
         course_id: s.course_id, section_id: s.section_id, ...c, minimum,
+        section_classes_held: heldFor(s.section_id),
         belowMinimum: c.percentage !== null && c.percentage < minimum,
+        badge: c.percentage !== null && c.percentage >= BADGE,
       };
     })
     .sort((a, b) => a.section_name.localeCompare(b.section_name) || a.roll_number.localeCompare(b.roll_number));
@@ -194,7 +207,7 @@ const courseAverages = () => db.sections.map((sec) => {
   const rows = recordsFor({ sectionId: sec.id }).filter((r) => r.percentage !== null);
   return {
     course_id: sec.course_id, course_name: courseRow(sec.course_id).name, section_name: sec.name,
-    students: rows.length,
+    students: rows.length, classes_held: heldFor(sec.id), classes_cancelled: 0,
     avg_percentage: rows.length ? Math.round((rows.reduce((a, r) => a + r.percentage, 0) / rows.length) * 100) / 100 : null,
   };
 });
@@ -214,6 +227,11 @@ const eventView = (e, actor) => ({
   credit_periods: db.creditPeriods.filter((p) => p.event_id === e.id).map((p) => p.period_number).sort(),
   my_request_status: db.joins.find((j) => j.event_id === e.id && j.student_id === actor.id)?.status || null,
   pending_count: db.joins.filter((j) => j.event_id === e.id && j.status === 'pending').length,
+  approved_count: db.joins.filter((j) => j.event_id === e.id && j.status === 'approved').length,
+  credited_students: 0,
+  cancelled_classes: 0,
+  my_credits: [],
+  my_not_credited: [],
 });
 
 const clubView = (c) => ({
@@ -257,6 +275,30 @@ function handle(method, path, query, body, actor) {
       user: { id: u.id, name: u.name, loginId: u.login_id, role: u.role, canAddUsers: u.can_add_users },
     });
   }
+  // --- public: the sign-in page asks these before anyone is signed in. A 401
+  // here would make the app reload the page, over and over.
+  if (method === 'GET' && path === '/bootstrap') return json({ needed: false });
+  if (method === 'GET' && path === '/demo') {
+    const buttons = [
+      ['hod', 'HOD', 'Builds the timetable, cancels classes, decides leave.'],
+      ['ravi', 'Teacher', 'Marks the register in a few taps.'],
+      ['cse-b1', 'Student', 'Sees where they stand, and the badge at 90%.'],
+      ['mentor', 'Mentor', 'Runs a club and credits event attendance.'],
+    ];
+    return json({
+      enabled: true,
+      password: 'password123',
+      accounts: buttons.map(([loginId, label, blurb]) => {
+        const u = db.users.find((x) => x.login_id === loginId);
+        return { loginId, role: u.role, label, blurb, name: u.name };
+      }),
+    });
+  }
+  if (method === 'POST' && path === '/demo/login') {
+    const u = db.users.find((x) => x.login_id === body.loginId && x.status === 'active');
+    if (!u) return fail(404, 'That demo account is not set up.');
+    return json({ token: `demo.${u.id}`, user: { id: u.id, name: u.name, loginId: u.login_id, role: u.role, canAddUsers: u.can_add_users } });
+  }
   if (!actor) return fail(401, 'Sign in to continue.');
 
   if (method === 'GET' && path === '/auth/me') {
@@ -296,7 +338,7 @@ function handle(method, path, query, body, actor) {
   // --- structure
   if (method === 'GET' && path === '/courses') {
     return json(db.courses.map((c) => ({
-      ...c, min_attendance: db.criteria[c.id] ?? null,
+      ...WEEK, ...c, min_attendance: db.criteria[c.id] ?? null,
       section_count: db.sections.filter((s) => s.course_id === c.id).length,
     })));
   }
@@ -384,15 +426,18 @@ function handle(method, path, query, body, actor) {
   // --- schedule
   if (method === 'GET' && path.startsWith('/schedule/course/')) {
     const courseId = path.split('/')[3];
+    const course = courseRow(courseId);
     return json({
-      days: DAYS,
+      days: DAYS, daysPerWeek: 6, periodsPerDay: WEEK.periods_per_day, timings: null,
+      course: { id: course.id, name: course.name },
       slots: db.slots.filter((s) => s.course_id === courseId).map((s) => slotView(s, actor)),
     });
   }
   if (method === 'GET' && path === '/schedule/mine') {
     const s = studentRow(actor.id);
     return json({
-      days: DAYS, section: sectionRow(s.section_id).name, course: courseRow(s.course_id).name,
+      days: DAYS, daysPerWeek: 6, periodsPerDay: WEEK.periods_per_day, timings: null,
+      section: sectionRow(s.section_id).name, sectionId: s.section_id, course: courseRow(s.course_id).name,
       slots: db.slots.filter((x) => x.section_id === s.section_id).map((x) => slotView(x, actor)),
     });
   }
@@ -519,6 +564,9 @@ function handle(method, path, query, body, actor) {
     });
     const overall = counts(db.attendance.filter((a) => a.student_id === id));
     return json({
+      badge: badgeFor(overall),
+      classesHeld: { section: heldFor(s.section_id), cancelled: 0 },
+      eventCredits: [],
       profile: {
         id, name: user(id).name, login_id: user(id).login_id, roll_number: s.roll_number,
         course_id: s.course_id, course_name: courseRow(s.course_id).name, section_name: sectionRow(s.section_id).name,
@@ -722,8 +770,10 @@ function handle(method, path, query, body, actor) {
     const e = db.events.find((x) => x.id === eventId);
     if (e.created_by !== actor.id && actor.role !== 'hod') return fail(403, 'Only the person who posted this event can see its join requests.');
     return json(db.joins.filter((j) => j.event_id === eventId).map((j) => ({
-      ...j, student_name: user(j.student_id).name, roll_number: studentRow(j.student_id)?.roll_number,
+      ...j, student_name: user(j.student_id).name, login_id: user(j.student_id).login_id,
+      roll_number: studentRow(j.student_id)?.roll_number,
       section_name: sectionRow(studentRow(j.student_id)?.section_id)?.name,
+      credits: [], not_credited: [],
     })));
   }
   if (method === 'POST' && path.match(/^\/events\/[^/]+\/join$/)) {
@@ -867,6 +917,11 @@ function handle(method, path, query, body, actor) {
         role: 'student',
         attendance: { ...overall, belowMinimum: overall.percentage !== null && overall.percentage < minimum, ...classesNeeded(overall, minimum) },
         minimum,
+        badge: badgeFor(overall),
+        classesHeld: { section: heldFor(s.section_id), cancelled: 0 },
+        section: sectionRow(s.section_id).name,
+        timings: null,
+        upcomingCancellations: [],
         subjectCount: db.subjects.filter((x) => x.course_id === s.course_id).length,
         todayClasses: db.slots.filter((x) => x.section_id === s.section_id && x.day_of_week === day).map((x) => slotView(x, actor)),
         pendingLeave: db.leave.filter((l) => l.student_id === actor.id && l.status === 'pending').length,
@@ -875,6 +930,7 @@ function handle(method, path, query, body, actor) {
     if (actor.role === 'teacher') {
       return json({
         role: 'teacher',
+        upcomingCancellations: [],
         todayClasses: db.slots.filter((x) => x.teacher_id === actor.id && x.day_of_week === day).map((x) => slotView(x, actor)),
         pendingLeave: pendingLeaveFor(actor),
       });
@@ -901,6 +957,10 @@ function handle(method, path, query, body, actor) {
             && counts.sections_without_teacher === 0 && counts.criteria > 0,
         },
         courseAverages: courseAverages(),
+        classStats: {
+          held: db.sections.reduce((n, sec) => n + heldFor(sec.id), 0), held_today: 0, cancelled: 0, cancelled_upcoming: 0,
+        },
+        upcomingCancellations: [],
         pendingLeave: pendingLeaveFor(actor),
         recentActivity: db.activity.slice(0, 12),
         recentEdits: db.attendance.filter((a) => a.edited_at).slice(0, 8).map((a) => ({
@@ -912,6 +972,12 @@ function handle(method, path, query, body, actor) {
       });
     }
     return json({ role: 'mentor' });
+  }
+
+  // Cancellations and added event attendance need the real server's register.
+  if (method === 'GET' && path === '/classes/cancellations') return json([]);
+  if ((method === 'POST' && path === '/classes/cancel') || (method === 'POST' && /^\/events\/[^/]+\/attendance$/.test(path))) {
+    return fail(400, 'This clickable demo only shows the screens. Run the app with npm run seed:demo to try this for real.');
   }
 
   return fail(404, `No demo handler for ${method} ${path}`);

@@ -28,3 +28,16 @@ export const addDays = (dateStr, n) => {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
+
+/** "Fri, 2 Oct, 2026" — a calendar date for a sentence in a notification. */
+const pretty = new Intl.DateTimeFormat('en-IN', {
+  weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+});
+export const prettyDate = (dateStr) => pretty.format(new Date(`${String(dateStr).slice(0, 10)}T00:00:00Z`));
+
+/** "period 3", "periods 3 and 4", "periods 1, 2 and 5" */
+export const periodsText = (periods) => {
+  const list = [...periods].sort((a, b) => a - b);
+  if (list.length === 1) return `period ${list[0]}`;
+  return `periods ${list.slice(0, -1).join(', ')} and ${list.at(-1)}`;
+};

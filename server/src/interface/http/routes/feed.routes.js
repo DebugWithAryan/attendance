@@ -3,6 +3,9 @@ import * as audit from '../../../infra/repositories/audit.repo.js';
 import * as attendanceService from '../../../application/attendance.service.js';
 import * as scheduleService from '../../../application/schedule.service.js';
 import * as leaveService from '../../../application/leave.service.js';
+import * as classesService from '../../../application/classes.service.js';
+import * as sessions from '../../../infra/repositories/session.repo.js';
+import { todayIso } from '../../../shared/dates.js';
 import { parse } from '../../../shared/validate.js';
 
 /** Notifications, the HOD audit trail, and the per-role Overview brief. */
@@ -55,13 +58,17 @@ export default async function feedRoutes(app) {
     if (actor.role === 'student') {
       const view = await attendanceService.studentView(actor.id);
       const grid = await scheduleService.myGrid(actor);
-      const day = new Date().getUTCDay() || 7;
       return {
         role: 'student',
         attendance: view.overall,
         minimum: view.minimum,
+        badge: view.badge,
+        classesHeld: view.classesHeld,
+        section: grid.section,
+        timings: grid.timings,
         subjectCount: view.subjects.length,
-        todayClasses: grid.slots.filter((s) => s.day_of_week === day),
+        todayClasses: await scheduleService.todayForStudent(grid),
+        upcomingCancellations: (await classesService.list(actor, {})).slice(0, 5),
         pendingLeave: (await leaveService.mine(actor)).filter((l) => l.status === 'pending').length,
       };
     }
@@ -69,6 +76,7 @@ export default async function feedRoutes(app) {
       return {
         role: 'teacher',
         todayClasses: await scheduleService.todayForTeacher(actor.id),
+        upcomingCancellations: (await classesService.list(actor, {})).slice(0, 5),
         pendingLeave: (await leaveService.queue(actor, { status: 'pending' })).length,
       };
     }
@@ -85,8 +93,10 @@ export default async function feedRoutes(app) {
             && counts.sections_without_teacher === 0 && counts.criteria > 0,
         },
         courseAverages: await attendanceService.analytics(),
+        classStats: await sessions.collegeTotals(todayIso()),
+        upcomingCancellations: (await classesService.list(actor, {})).slice(0, 5),
         pendingLeave: (await leaveService.queue(actor, { status: 'pending' })).length,
-        recentActivity: await audit.listActivity({ limit: 12 }),
+        recentActivity: await audit.listActivity({ limit: 12, withoutSignIns: true }),
         recentEdits: await attendanceService.recentEdits(8),
       };
     }
@@ -106,6 +116,7 @@ export default async function feedRoutes(app) {
           mentors: mentors.length,
           students: counts.students,
         },
+        classStats: await sessions.collegeTotals(todayIso()),
         recentActivity: await audit.listActivity({ limit: 12 }),
       };
     }

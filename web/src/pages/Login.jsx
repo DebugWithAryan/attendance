@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
+import { DemoAccounts } from '../components/Demo.jsx';
 
 export default function Login() {
   // Undefined until the check answers: a failed check must fall back to the
@@ -21,6 +23,12 @@ export default function Login() {
           {firstRun ? <FirstRun onDone={() => setFirstRun(false)} /> : <SignIn />}
         </div>
       </div>
+      {!firstRun && <div className="login-demo"><DemoAccounts heading="Or try a demo account" /></div>}
+      <p className="login-links label">
+        <Link to="/welcome">New here? What this app is</Link>
+        {' \u00b7 '}
+        <a href="/user-manual.pdf" download>User manual (PDF)</a>
+      </p>
     </div>
   );
 }

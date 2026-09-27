@@ -13,6 +13,8 @@ import leaveRoutes from './interface/http/routes/leave.routes.js';
 import eventRoutes from './interface/http/routes/events.routes.js';
 import clubRoutes from './interface/http/routes/clubs.routes.js';
 import feedRoutes from './interface/http/routes/feed.routes.js';
+import classRoutes from './interface/http/routes/classes.routes.js';
+import demoRoutes from './interface/http/routes/demo.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -68,6 +70,8 @@ export async function buildApp() {
     await api.register(eventRoutes);
     await api.register(clubRoutes);
     await api.register(feedRoutes);
+    await api.register(classRoutes);
+    await api.register(demoRoutes);
   }, { prefix: '/api' });
 
   // Kept outside the prefix for container health checks.

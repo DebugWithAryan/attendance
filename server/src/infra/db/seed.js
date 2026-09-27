@@ -23,8 +23,9 @@ async function seed() {
       ['Dr. Anitha Menon', 'hod', password],
     )).rows[0];
 
+    // Five periods a day, matching the timetable below.
     const course = (await tx.query(
-      'insert into courses (name, created_by) values ($1,$2) returning id',
+      'insert into courses (name, created_by, periods_per_day) values ($1,$2,5) returning id',
       ['B.Tech Computer Science', hod.id],
     )).rows[0];
 

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
-import { PageHead, Problem } from '../components/Bits.jsx';
+import { useApi } from '../hooks.js';
+import { AttendanceBadge, PageHead, Problem } from '../components/Bits.jsx';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -9,6 +10,8 @@ export default function Profile() {
   const [form, setForm] = useState({ currentPassword: '', newPassword: '' });
   const [error, setError] = useState(null);
   const [done, setDone] = useState(null);
+  const isStudent = user.role === 'student';
+  const standing = useApi(isStudent ? `/attendance/student/${user.id}` : null, { skip: !isStudent });
 
   const change = async (e) => {
     e.preventDefault();
@@ -30,6 +33,9 @@ export default function Profile() {
         <div className="panel">
           <header><h3>{user.name}</h3></header>
           <div className="body">
+            {standing.data?.badge?.earned && (
+              <div style={{ marginBottom: 'var(--s-4)' }}><AttendanceBadge badge={standing.data.badge} /></div>
+            )}
             <table>
               <tbody>
                 <tr><th>Login ID</th><td>{user.loginId}</td></tr>
@@ -62,6 +68,17 @@ export default function Profile() {
           </div>
         </div>
 
+        {user.isDemo ? (
+          <div className="panel">
+            <header><h3>Password</h3></header>
+            <div className="body">
+              <p className="label">
+                This is a shared demo account, so its password cannot be changed: the next visitor signs in with
+                the same one. On a real deployment, this is where you would set your own.
+              </p>
+            </div>
+          </div>
+        ) : (
         <div className="panel">
           <header><h3>Change password</h3></header>
           <form className="body stack" style={{ gap: '0.75rem' }} onSubmit={change}>
@@ -80,6 +97,7 @@ export default function Profile() {
             <div><button type="submit">Change password</button></div>
           </form>
         </div>
+        )}
       </div>
     </>
   );

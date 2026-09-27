@@ -109,6 +109,25 @@ for (const [role, paths] of Object.entries(PAGES)) {
   }
 }
 
+// The introduction page is public: the QR code on a poster leads there, before
+// anyone has an account.
+{
+  realError('\nsigned out');
+  sessionStorage.clear();
+  consoleErrors = [];
+  const host = document.getElementById('root');
+  const root = mount(host, '/welcome');
+  await sleep(900);
+  const text = (host.textContent || '').replace(/\s+/g, ' ');
+  const hasQr = !!host.querySelector('svg.qr');
+  root.unmount();
+  const reactErrors = consoleErrors.filter((e) => !/not wrapped in act|ReactDOMTestUtils/.test(e));
+  if (reactErrors.length) { fail += 1; realError(`  FAIL /welcome — ${reactErrors[0].slice(0, 220)}`); }
+  else if (!/What it does/.test(text) || !/Sign in/.test(text) || !hasQr) {
+    fail += 1; realError(`  FAIL /welcome — introduction incomplete (${text.slice(0, 120)})`);
+  } else { pass += 1; realError(`  ok   /welcome — ${text.slice(0, 90)}`); }
+}
+
 console.error = realError;
 if (reloaded) console.error('\nnote: the app triggered a reload (a 401 slipped through)');
 for (const p of problems) console.error('problem:', p);

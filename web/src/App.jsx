@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 import Shell from './components/Shell.jsx';
 import { Loading } from './components/Bits.jsx';
@@ -17,6 +17,7 @@ import Accounts from './pages/Accounts.jsx';
 import Guide from './pages/Guide.jsx';
 import Activities from './pages/Activities.jsx';
 import Profile from './pages/Profile.jsx';
+import Welcome from './pages/Welcome.jsx';
 import { navFor } from './nav.js';
 
 /** Routes the current role cannot reach fall back to Overview. */
@@ -28,7 +29,11 @@ function Guarded({ path, children }) {
 
 export default function App() {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
+  // The introduction page is public: it is where the QR code on a poster lands,
+  // for people who do not have an account yet.
+  if (location.pathname === '/welcome') return <Welcome />;
   if (loading) return <Loading what="Signing you in" />;
   if (!user) return <Login />;
 
