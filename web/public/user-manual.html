@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attendance — User Manual</title>
+<meta name="description" content="How to use the college attendance app: for students, teachers, heads of department, mentors and administrators.">
+<style>
+  :root {
+    --ink: #14322f; --ink-2: #4a615d; --ink-3: #7b908c; --paper: #f2f5f2; --surface: #fff;
+    --rule: #d7e0db; --rule-strong: #b9c7c1; --margin-rule: #c0483c;
+    --present: #10685a; --present-wash: #e4f0ec; --absent: #b0342a; --absent-wash: #fbeae8;
+    --gold: #8c6205; --gold-wash: #fbf1d6;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0 auto; max-width: 52rem; padding: 2rem 1.25rem 4rem; color: var(--ink); background: var(--surface);
+    font: 400 15.5px/1.6 "Familjen Grotesk", "Segoe UI", "Helvetica Neue", Arial, "DejaVu Sans", sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  h1, h2, h3 { line-height: 1.2; letter-spacing: -0.015em; }
+  h2 { font-size: 1.65rem; margin: 0 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--ink); }
+  h2 .num { color: var(--margin-rule); margin-right: 0.35rem; }
+  h3 { font-size: 1.15rem; margin: 1.6rem 0 0.4rem; }
+  p { margin: 0 0 0.75rem; }
+  a { color: var(--ink); }
+  code, kbd { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 0.88em; background: #eef2ef; padding: 0.05em 0.3em; border-radius: 3px; }
+  pre { background: #0f2422; color: #e8efec; padding: 0.8rem 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.85em; line-height: 1.5; }
+  pre code { background: none; padding: 0; color: inherit; }
+  ol, ul { padding-left: 1.4rem; margin: 0 0 0.9rem; }
+  li { margin: 0.2rem 0; }
+  table { width: 100%; border-collapse: collapse; margin: 0.4rem 0 1rem; font-size: 0.95em; }
+  th, td { text-align: left; vertical-align: top; padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--rule); }
+  th { color: var(--ink-2); font-weight: 600; font-size: 0.9em; }
+  figure { margin: 1rem 0 1.4rem; break-inside: avoid; }
+  figure img { display: block; max-width: 100%; height: auto; border: 1px solid var(--rule-strong); border-radius: 6px; }
+  figure.phone img { max-width: 17rem; }
+  figure.pair { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
+  figure.pair img { max-width: calc(50% - 0.5rem); }
+  figcaption { color: var(--ink-2); font-size: 0.88em; margin-top: 0.4rem; }
+  .note { border: 1px solid var(--rule); border-left: 3px solid var(--ink); border-radius: 4px; padding: 0.6rem 0.8rem; margin: 0.8rem 0 1rem; background: #f8faf8; break-inside: avoid; }
+  .note.tip { border-left-color: var(--present); background: var(--present-wash); }
+  .note.warn { border-left-color: var(--absent); background: var(--absent-wash); }
+  .note.gold { border-left-color: var(--gold); background: var(--gold-wash); }
+  .note strong:first-child { display: block; margin-bottom: 0.15rem; }
+  .ui { font-weight: 600; white-space: nowrap; }
+  .chapter { margin-top: 3rem; }
+  .cover { text-align: left; padding: 3rem 0 2rem; border-bottom: 2px solid var(--ink); margin-bottom: 2rem; }
+  .cover .bar { height: 8px; background: var(--ink); margin-bottom: 2rem; }
+  .cover .bar::after { content: ""; display: block; height: 8px; width: 4rem; background: var(--margin-rule); }
+  .cover .kicker { text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; color: var(--margin-rule); font-size: 0.85rem; margin: 0; }
+  .cover h1 { font-size: 3rem; margin: 0.4rem 0 0.6rem; }
+  .cover .lede { font-size: 1.2rem; color: var(--ink-2); max-width: 36rem; }
+  .cover .meta { color: var(--ink-3); font-size: 0.9rem; margin-top: 2rem; }
+  .toc ol { columns: 2; column-gap: 2rem; padding-left: 1.2rem; }
+  .toc li { break-inside: avoid; }
+  .steps li::marker { font-weight: 700; color: var(--margin-rule); }
+  .formula { font-size: 1.05rem; background: #f8faf8; border: 1px dashed var(--rule-strong); border-radius: 6px; padding: 0.7rem 1rem; margin: 0.6rem 0 1rem; }
+  .downloads { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 1rem 0 0; }
+  .downloads a { display: inline-block; padding: 0.45rem 0.9rem; border: 1px solid var(--ink); border-radius: 4px; text-decoration: none; font-weight: 600; }
+  .downloads a.primary { background: var(--ink); color: #fff; }
+  @media (max-width: 640px) {
+    .toc ol { columns: 1; }
+    figure.pair img { max-width: 100%; }
+    .cover h1 { font-size: 2.2rem; }
+  }
+  @media print {
+    @page { size: A4; margin: 15mm 14mm 16mm; }
+    html, body { background: #fff; }
+    body { max-width: none; padding: 0; font-size: 10.5pt; }
+    .chapter { break-before: page; margin-top: 0; }
+    .downloads { display: none; }
+    h2, h3 { break-after: avoid; }
+    figure img { max-height: 190mm; width: auto; }
+    /* Keeps the note after it on the same page. */
+    figure.short img { max-height: 100mm; }
+    pre { white-space: pre-wrap; }
+    a { text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="bar"></div>
+  <p class="kicker">Attendance</p>
+  <h1>User manual</h1>
+  <p class="lede">The college attendance register, on every phone. How to use it as a student, a teacher, a head of department, a mentor or an administrator.</p>
+  <div class="downloads">
+    <a class="primary" href="user-manual.pdf" download>Download this manual (PDF)</a>
+    <a href="/welcome">Open the app</a>
+  </div>
+  <p class="meta">Screenshots show the demo college, built around the real D2 BBA class routine. Edition: September 2026.</p>
+</section>
+
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#start">Getting started</a></li>
+    <li><a href="#counting">How attendance is counted</a></li>
+    <li><a href="#students">For students</a></li>
+    <li><a href="#teachers">For teachers</a></li>
+    <li><a href="#hod">For the head of department</a></li>
+    <li><a href="#mentors">For mentors</a></li>
+    <li><a href="#admins">For administrators</a></li>
+    <li><a href="#privacy">Passwords, privacy and the audit trail</a></li>
+    <li><a href="#demo">Running the tech fest demo</a></li>
+    <li><a href="#faq">Questions and fixes</a></li>
+    <li><a href="#glossary">Words used in the app</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ 1 -->
+<section class="chapter" id="start">
+  <h2><span class="num">1</span>Getting started</h2>
+  <p>Attendance replaces the paper register. A teacher marks a class in a few taps. A student sees exactly where they stand. The head of department (HOD) sees every section, and every change is written to an audit trail.</p>
+
+  <h3>Who uses it</h3>
+  <table>
+    <tr><th>Role</th><th>What they do</th></tr>
+    <tr><td><strong>Student</strong></td><td>Checks their attendance, applies for leave with a certificate, joins events that count as attendance.</td></tr>
+    <tr><td><strong>Teacher</strong></td><td>Marks the register for their own classes, corrects mistakes within 48 hours, cancels a class they cannot take, decides leave for the section they are class teacher of.</td></tr>
+    <tr><td><strong>HOD</strong></td><td>Builds courses, sections, subjects and timetables, adds students, cancels classes for holidays and events, reads every record.</td></tr>
+    <tr><td><strong>Mentor</strong></td><td>Runs clubs and posts events that can credit class attendance.</td></tr>
+    <tr><td><strong>Administrator</strong></td><td>Creates the HOD, teacher and mentor accounts and resets passwords. Does not teach.</td></tr>
+  </table>
+
+  <h3>Opening the app</h3>
+  <p>Scan the QR code on the notice board, a slide or the stall with your phone camera. It opens the introduction page, which anyone can read before they have an account. From there, tap <span class="ui">Sign in</span>.</p>
+  <figure>
+    <img src="manual/welcome.jpg" alt="The introduction page, with sign-in, manual download and demo account buttons">
+    <figcaption>The introduction page: what the app is, a sign-in button, this manual, and the demo accounts when they are switched on.</figcaption>
+  </figure>
+  <div class="note tip"><strong>Keep it on your home screen</strong>On Android, open the site in Chrome, tap the ⋮ menu, then <span class="ui">Add to Home screen</span>. On an iPhone, open it in Safari, tap Share, then <span class="ui">Add to Home Screen</span>. It then opens like an app.</div>
+
+  <h3>Signing in</h3>
+  <ol class="steps">
+    <li>Your department creates your account and gives you a <strong>login ID</strong> and a first password in person. Nothing is emailed.</li>
+    <li>Type the login ID and password, and tap <span class="ui">Sign in</span>.</li>
+    <li>Open <span class="ui">Profile</span> and change the password. Whoever created your account knows the first one.</li>
+  </ol>
+  <figure>
+    <img src="manual/sign-in.jpg" alt="The sign-in page, with one-tap demo accounts below it">
+    <figcaption>The sign-in page. The demo accounts underneath appear only on a demonstration deployment.</figcaption>
+  </figure>
+  <p>The left rail (the bottom bar on a phone) lists only what your role can use. <span class="ui">Guide</span> repeats the steps for your role inside the app, and has a button to download this manual.</p>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="chapter" id="counting">
+  <h2><span class="num">2</span>How attendance is counted</h2>
+  <p>Your percentage is measured against the classes your section actually <strong>held</strong>. A class counts as held once its teacher takes the register.</p>
+  <div class="formula">Attendance % = present ÷ (present + absent + not marked)</div>
+  <table>
+    <tr><th>Situation</th><th>How it counts</th></tr>
+    <tr><td><strong>Present</strong></td><td>Counts for you.</td></tr>
+    <tr><td><strong>Absent</strong></td><td>Counts against you.</td></tr>
+    <tr><td><strong>Not marked</strong></td><td>The class was held but the register has no mark for you. It counts as missed; if you were there, ask your teacher to correct it.</td></tr>
+    <tr><td><strong>Approved leave</strong></td><td>Left out completely, so approved leave never lowers your percentage.</td></tr>
+    <tr><td><strong>Cancelled class</strong></td><td>Never held, so it counts for nobody and nothing can be marked.</td></tr>
+    <tr><td><strong>Event credit</strong></td><td>A period credited by an event you took part in counts as present.</td></tr>
+    <tr><td><strong>Before you joined</strong></td><td>Classes held before your account existed do not count against you.</td></tr>
+  </table>
+  <p><strong>Example.</strong> Your section held 91 classes. You were present at 88 and absent from 3: 88 ÷ 91 = 96.7%.</p>
+  <h3>The minimum, and how to reach it</h3>
+  <p>Each course has a minimum percentage set by the HOD; 75% if none was set. When you are below it, the app tells you how many classes you must attend <em>in a row</em> to reach it. It never tells you how many you can afford to skip.</p>
+  <h3>The 90% badge</h3>
+  <div class="note gold"><strong>★ 90%+ attendance</strong>Reach 90% overall and a gold badge appears on your overview and your profile, and a star appears next to your name in the register your teachers read. Below 90%, the app tells you how many classes in a row it takes to earn it.</div>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="chapter" id="students">
+  <h2><span class="num">3</span>For students</h2>
+
+  <h3>Your overview</h3>
+  <p>The first page after signing in. The ring is your percentage against the minimum for your course. Below it: how many classes it takes to reach the minimum, the badge, today's classes (cancelled ones are struck through with the reason) and any classes cancelled in the days ahead.</p>
+  <figure>
+    <img src="manual/student-overview.jpg" alt="A student's overview with the attendance badge and the ring">
+    <figcaption>A student above 90%: the badge, the ring, and a class cancelled ahead for the tech fest.</figcaption>
+  </figure>
+
+  <h3>Analytics</h3>
+  <p><span class="ui">Analytics</span> breaks your attendance down by subject: classes held, present, absent, not marked, leave, percentage, and classes needed. <span class="ui">Attendance from events</span> lists every class an event credited for you.</p>
+  <figure>
+    <img src="manual/student-analytics.jpg" alt="Per-subject attendance and the list of event credits">
+    <figcaption>Per subject, and the classes credited by the B-Plan contest.</figcaption>
+  </figure>
+
+  <h3>Your timetable</h3>
+  <p><span class="ui">Schedule</span> shows your section's week, with period times, the break and the after-hours activities, exactly as on the printed routine.</p>
+  <figure>
+    <img src="manual/student-schedule.jpg" alt="The D2 BBA timetable as a student sees it">
+    <figcaption>The D2 BBA routine: Monday to Friday, four periods, a break after the third.</figcaption>
+  </figure>
+
+  <h3>Applying for leave</h3>
+  <ol class="steps">
+    <li>Open <span class="ui">Leave desk</span>.</li>
+    <li>Pick the <span class="ui">From</span> and <span class="ui">To</span> dates and write the reason.</li>
+    <li>Attach the medical certificate with <span class="ui">Take a photo</span> or <span class="ui">Choose a file</span> (JPG, PNG, WEBP, HEIC or PDF, under 2 MB).</li>
+    <li>Tap <span class="ui">Send request</span>. Your class teacher and the HOD are told.</li>
+  </ol>
+  <p>Once approved, every class in those days is marked as leave, and leave does not count against you.</p>
+  <figure>
+    <img src="manual/student-leave.jpg" alt="The leave form">
+    <figcaption>Only your class teacher and the HOD can open the certificate, and every view is recorded.</figcaption>
+  </figure>
+
+  <h3>Events that count as attendance</h3>
+  <p>An event can <em>credit</em> class periods: if you take part, you are marked present in whatever class your section has in those periods. Tap <span class="ui">Ask to join</span>. When the organiser approves you, or adds your attendance directly, the event card shows exactly what it did.</p>
+  <figure>
+    <img src="manual/student-events.jpg" alt="An approved event showing the periods it credited">
+    <figcaption>Each credited period is named with its class. A period that could not be credited says why: no class then, a cancelled class, or a Sunday.</figcaption>
+  </figure>
+
+  <figure class="phone">
+    <img src="manual/phone-student.jpg" alt="The student overview on a phone">
+    <figcaption>On a phone, the menu moves to a bar at the bottom of the screen.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="chapter" id="teachers">
+  <h2><span class="num">4</span>For teachers</h2>
+
+  <h3>Your day</h3>
+  <p>Your overview lists today's classes with their times. A class you cannot take can be cancelled right there with one tap on <span class="ui">cancel</span>, and undone the same way. Your students and the HOD are told.</p>
+  <figure class="pair">
+    <img src="manual/teacher-overview.jpg" alt="A teacher's overview with today's class and a cancel link">
+    <img src="manual/phone-teacher.jpg" alt="The same overview on a phone">
+    <figcaption>Today's classes, the one-tap cancel, and leave requests waiting for a decision.</figcaption>
+  </figure>
+
+  <h3>Marking the register</h3>
+  <ol class="steps">
+    <li>Open <span class="ui">Attendance</span>.</li>
+    <li>Pick the <span class="ui">Course</span>, <span class="ui">Section</span>, <span class="ui">Date</span> and <span class="ui">Period</span>. The roster loads from the timetable, so you can only open your own classes.</li>
+    <li>Tap <span class="ui">Mark all present</span>, then tap <span class="ui">A</span> for each absentee. <span class="ui">L</span> is leave.</li>
+    <li>Check the tally at the bottom, and tap <span class="ui">Save attendance</span>.</li>
+  </ol>
+  <figure>
+    <img src="manual/teacher-attendance.jpg" alt="The marking screen with two students marked absent">
+    <figcaption>28 present and 2 absent, ready to save. Students on approved leave arrive already marked L.</figcaption>
+  </figure>
+  <div class="note warn"><strong>Mark everyone before saving</strong>A student left unmarked in a class you saved counts as having missed it. The tally warns you when someone is still unmarked.</div>
+  <p>A row tinted purple was credited through an event, and says so; saving the register again keeps it credited.</p>
+
+  <h3>Correcting a mark</h3>
+  <p>Tap <span class="ui">Correct</span> on the student's row, choose the new status, give a short reason, and tap <span class="ui">Save correction</span>. You can correct your own marks for 48 hours. After that, the HOD makes the correction, and it is recorded against their name.</p>
+
+  <h3>Cancelling a class</h3>
+  <p>From your overview, tap <span class="ui">cancel</span> next to the class. Or, on the marking screen, open the class and tap <span class="ui">Not taking this class? Cancel it instead</span>, add a reason if you like, and tap <span class="ui">Cancel this class</span>. A cancelled class cannot be marked and counts for nobody. <span class="ui">Restore this class</span> undoes it. You can only cancel your own classes, and never one whose register you already took.</p>
+
+  <h3>Leave for your section</h3>
+  <p>If you are a class teacher, requests from your section arrive on the <span class="ui">Leave desk</span>. Open the certificate with <span class="ui">View medical certificate</span>, add a note if you like, and tap <span class="ui">Approve</span> or <span class="ui">Reject</span>. Approving marks leave across every class of those days. <span class="ui">Change this decision</span> reverses it later, with a reason.</p>
+
+  <h3>Records and exports</h3>
+  <p><span class="ui">Records</span> shows attendance by student, with anyone under the minimum flagged in red. <span class="ui">Export all</span> and <span class="ui">Export under minimum</span> download a CSV that opens in Excel. On a phone, they open the share sheet, so the file can go straight to WhatsApp or email.</p>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="chapter" id="hod">
+  <h2><span class="num">5</span>For the head of department</h2>
+
+  <h3>Setting up the department</h3>
+  <p>Nobody can mark a register until the timetable exists, and each step depends on the one before it. Your overview shows a checklist until the department is set up.</p>
+  <table>
+    <tr><th>#</th><th>Where</th><th>What</th></tr>
+    <tr><td>1</td><td>Setup</td><td>Add the course (for example BBA).</td></tr>
+    <tr><td>2</td><td>Setup</td><td>Add its sections (D1, D2…) and subjects.</td></tr>
+    <tr><td>3</td><td>Setup</td><td>Create teacher accounts, or ask the administrator to.</td></tr>
+    <tr><td>4</td><td>Setup → Allocation</td><td>Give each section a class teacher. Leave requests go to them.</td></tr>
+    <tr><td>5</td><td>Schedule</td><td>Set the week, then fill each section's timetable (see below).</td></tr>
+    <tr><td>6</td><td>Setup</td><td>Set the minimum attendance percentage for the course.</td></tr>
+    <tr><td>7</td><td>Setup → Accounts</td><td>Add students one at a time, or paste a CSV with <span class="ui">Bulk import</span>: <code>roll_number,name,login_id,password</code>, one per line.</td></tr>
+  </table>
+  <figure>
+    <img src="manual/hod-setup.jpg" alt="The Setup page">
+    <figcaption>Setup: courses, sections, subjects, class teachers, the minimum and accounts.</figcaption>
+  </figure>
+
+  <h3>Building the timetable</h3>
+  <ol class="steps">
+    <li>Open <span class="ui">Schedule</span> and pick the course. Every section gets its own grid, even one with nothing in it yet.</li>
+    <li>Set <span class="ui">Days a week</span> (for example Monday–Friday) and <span class="ui">Periods a day</span>, then tap <span class="ui">Save week</span>.</li>
+    <li>Optionally, tap <span class="ui">Timings</span> to print the period times, the break and what happens after classes on the grid, exactly as on the notice board.</li>
+    <li>Tap <span class="ui">add</span> in any empty period, choose the <span class="ui">Subject</span> and <span class="ui">Teacher</span>, and tap <span class="ui">Save period</span>.</li>
+    <li>Use <span class="ui">change</span> to give a period another subject or teacher, and <span class="ui">clear</span> to empty it.</li>
+  </ol>
+  <figure>
+    <img src="manual/hod-schedule.jpg" alt="The D2 BBA timetable in the builder">
+    <figcaption>The D2 BBA routine in the builder. Below the grid, the allocation table counts each subject's classes a week and who teaches them.</figcaption>
+  </figure>
+  <figure>
+    <img src="manual/hod-week.jpg" alt="Week settings and the timings form">
+    <figcaption>The week: Monday to Friday, four periods, the times of each period, a break after period 3, and the after-hours activities.</figcaption>
+  </figure>
+  <figure>
+    <img src="manual/hod-allocate.jpg" alt="Changing a period in the timetable builder">
+    <figcaption>Changing Wednesday's first period. The form opens under the grid, and the period being edited is outlined.</figcaption>
+  </figure>
+  <div class="note"><strong>The builder keeps the timetable consistent</strong>
+    <ul>
+      <li>A teacher cannot be in two sections at the same time. The teacher list says who is already teaching another section in that period.</li>
+      <li>The week cannot be shortened while a class still sits in a day or period that would disappear. Clear it first.</li>
+      <li>Clearing a period does not touch registers already taken in it.</li>
+    </ul>
+  </div>
+
+  <h3>Loading a printed routine in one go</h3>
+  <p>A whole routine can be loaded from a file instead of being typed period by period. The D2 BBA routine ships with the app as <code>server/src/infra/db/timetables/d2-bba.json</code>, and whoever runs the deployment can load it:</p>
+<pre><code>DATABASE_URL="…" npm run timetable:import -- server/src/infra/db/timetables/d2-bba.json --dry-run
+DATABASE_URL="…" npm run timetable:import -- server/src/infra/db/timetables/d2-bba.json</code></pre>
+  <p>It creates the course, section and subjects if needed, sets the week and timings, and makes the section's timetable match the file. A teacher it does not know yet gets an account with a one-time password, printed once, to hand over in person. Before importing into a real college's database, put each teacher's full name, and a <code>loginId</code> if you like, in the file. A class the routine lists without a teacher, such as Wednesday's review session, is left for you to allocate from Schedule.</p>
+
+  <h3>Cancelling classes in one tap</h3>
+  <p>For a holiday, a strike, exam day or a fest: open <span class="ui">Schedule</span>, tap <span class="ui">Cancel classes</span>, pick the date and tap the red button. That cancels every class in the college for the day. You can narrow it to one course or one section, pick periods, and give a reason, which students see.</p>
+  <figure>
+    <img src="manual/hod-cancel.jpg" alt="The cancel classes form">
+    <figcaption>One tap cancels the day. <span class="ui">Undo</span> appears straight away, and <span class="ui">restore</span> stays available in the list of cancelled classes.</figcaption>
+  </figure>
+  <p>When classes are cancelled:</p>
+  <ul>
+    <li>students of the section and the teachers of those classes are notified;</li>
+    <li>the classes cannot be marked, and count towards nobody's attendance;</li>
+    <li>approved leave and event credits skip them;</li>
+    <li>a class whose register was already taken is left alone and reported: it happened.</li>
+  </ul>
+  <p>For a college-wide event, open it under <span class="ui">Events</span> and tap <span class="ui">Cancel … for this event</span>: its credit periods, or the whole day, are cancelled in one tap, with the event named as the reason.</p>
+  <figure>
+    <img src="manual/hod-events.jpg" alt="An event card showing its cancelled class">
+    <figcaption>The tech fest, with its afternoon class already cancelled.</figcaption>
+  </figure>
+
+  <h3>Your overview</h3>
+  <p>The overview counts the classes held so far, the classes held today and the cancellations ahead. It also shows average attendance by section, leave waiting for a decision and the latest activity.</p>
+  <figure>
+    <img src="manual/hod-overview.jpg" alt="The HOD overview">
+    <figcaption>Classes held, averages by section, the leave desk and the audit trail at a glance.</figcaption>
+  </figure>
+
+  <h3>Records</h3>
+  <p>Pick a course or section, optionally a date range. Each row shows classes held, present, absent, not marked, leave and the percentage. Rows under the minimum are flagged; a ★ marks the 90% badge. Above the table, the number of classes the section held in that range. <span class="ui">Print / PDF</span> uses the browser's own PDF printing.</p>
+  <figure>
+    <img src="manual/hod-records.jpg" alt="The Records page for D2">
+    <figcaption>Five students under the minimum are flagged in red; ten hold the badge.</figcaption>
+  </figure>
+
+  <h3>Leave, analytics and the audit trail</h3>
+  <p>The <span class="ui">Leave desk</span> works as for a class teacher, for every section. <span class="ui">Analytics</span> shows each section's average against the classes it held, and how many were cancelled. <span class="ui">Activities</span> is the full audit trail: every mark, correction, cancellation, approval, credit and export, with who did it and why.</p>
+  <figure>
+    <img src="manual/hod-leave.jpg" alt="The leave desk with a pending request">
+    <figcaption>A pending request, with the certificate one tap away.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="chapter" id="mentors">
+  <h2><span class="num">6</span>For mentors</h2>
+  <h3>Clubs</h3>
+  <p>Under <span class="ui">Clubs</span>, create your club and add members by their login ID.</p>
+  <h3>Events</h3>
+  <ol class="steps">
+    <li>Under <span class="ui">Events</span>, fill in <span class="ui">Post an event</span>: title, date, and who can see it: all students, or your club's members only.</li>
+    <li>If the event replaces classes, tap the periods it counts for under <span class="ui">Periods this event counts for</span>.</li>
+    <li>Tap <span class="ui">Post event</span>.</li>
+  </ol>
+  <h3>Giving students their attendance</h3>
+  <p>Students ask to join; tap <span class="ui">Review join requests</span> and <span class="ui">Approve</span>. Or record who took part directly: tap <span class="ui">Add attendance</span>, paste their login IDs (or tap <span class="ui">Everyone who asked</span> or <span class="ui">All … club members</span>), and tap the button. Their periods are credited at once, their teachers are told, and the table shows what was credited for each student.</p>
+  <figure class="short">
+    <img src="manual/mentor-events.jpg" alt="An event with its join requests and the add attendance form">
+    <figcaption>Two students waiting for approval, and the add attendance form.</figcaption>
+  </figure>
+  <div class="note"><strong>Why a period might not be credited</strong>The student's section has no class then, the class was cancelled, or the event is on a Sunday. The result says which.</div>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="chapter" id="admins">
+  <h2><span class="num">7</span>For administrators</h2>
+  <p>On a brand new deployment, the first person to open the site creates the administrator account. After that, every account is created inside the app.</p>
+  <ol class="steps">
+    <li>Under <span class="ui">Accounts</span>, create the HOD account and hand over the login ID and password in person.</li>
+    <li>Create a second administrator, so one lost password is never the end.</li>
+    <li>Use <span class="ui">Reset password</span> when someone is locked out; it clears the lock immediately.</li>
+  </ol>
+  <figure>
+    <img src="manual/admin-accounts.jpg" alt="The Accounts page">
+    <figcaption>Creating accounts. Passwords are shown as plain text on purpose, so they can be read out.</figcaption>
+  </figure>
+  <h3>Sharing the app with a QR code</h3>
+  <p>Under <span class="ui">Guide</span>, <span class="ui">Share the app</span> shows a QR code that opens the introduction page. <span class="ui">Print a poster</span> prints it large, on its own page, for a notice board or a stall.</p>
+  <figure>
+    <img src="manual/guide-share.jpg" alt="The QR code panel on the Guide page">
+    <figcaption>Anyone who scans it can read what the app is, download this manual and sign in.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 8 -->
+<section class="chapter" id="privacy">
+  <h2><span class="num">8</span>Passwords, privacy and the audit trail</h2>
+  <table>
+    <tr><th>If you are a…</th><th>Ask this person to reset your password</th></tr>
+    <tr><td>Student</td><td>Your class teacher, or the HOD</td></tr>
+    <tr><td>Teacher, mentor or HOD</td><td>An administrator</td></tr>
+    <tr><td>Administrator</td><td>Another administrator</td></tr>
+  </table>
+  <ul>
+    <li>There is no reset by email anywhere. Credentials are handed over in person.</li>
+    <li>Repeated wrong passwords lock an account for a few minutes. A reset clears the lock.</li>
+    <li>You are notified whenever someone else changes your password. If you did not expect it, say so.</li>
+    <li>Medical certificates are never public links: only the student, their class teacher and the HOD can open one, and each view is recorded.</li>
+    <li>Every correction, override, cancellation, approval, credit and export is written to the audit trail, with who did it and why.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 9 -->
+<section class="chapter" id="demo">
+  <h2><span class="num">9</span>Running the tech fest demo</h2>
+  <p>A demonstration deployment has a sample college and one-tap demo accounts, so visitors can try every role without typing a password. The demo college is built around the real D2 BBA routine; its students, marks and events are made up.</p>
+
+  <h3>Setting it up (once)</h3>
+  <ol class="steps">
+    <li>Use a separate, empty database. Never the college's real one.</li>
+    <li>Create the tables, then the demo college:
+<pre><code>DATABASE_URL="…" npm run migrate
+DATABASE_URL="…" npm run seed:demo</code></pre></li>
+    <li>Deploy with the environment variable <code>DEMO_MODE=1</code>. The sign-in and introduction pages then show the demo buttons.</li>
+    <li>Sign in as the administrator, open <span class="ui">Guide</span>, and print the QR poster for the stall.</li>
+  </ol>
+
+  <h3>The demo accounts</h3>
+  <table>
+    <tr><th>Button</th><th>Login ID</th><th>What it shows</th></tr>
+    <tr><td>HOD</td><td><code>demo.hod</code></td><td>The D2 BBA timetable, one-tap cancellation, records, analytics</td></tr>
+    <tr><td>Teacher</td><td><code>demo.teacher</code></td><td>SS, class teacher of D2: today's classes, marking, a leave request to decide</td></tr>
+    <tr><td>Student</td><td><code>demo.student</code></td><td>Above 90% with the badge, and classes credited by an event</td></tr>
+    <tr><td>Student at risk</td><td><code>demo.atrisk</code></td><td>Below the minimum, and how many classes it takes to recover</td></tr>
+    <tr><td>Mentor</td><td><code>demo.mentor</code></td><td>The Entrepreneurship Cell, and join requests to approve</td></tr>
+    <tr><td>Administrator</td><td><code>demo.admin</code></td><td>Accounts, and the QR poster</td></tr>
+  </table>
+  <p>Every demo account's password is <code>demo1234</code>. Visitors cannot change it, reset another demo account's password, or remove a demo account, so nobody locks the next visitor out.</p>
+
+  <h3>A three-minute walkthrough</h3>
+  <ol class="steps">
+    <li>Scan the QR poster: the introduction page opens.</li>
+    <li><strong>Teacher</strong>: open today's class, tap <span class="ui">Mark all present</span>, tap two absentees, save. Two taps plus one per absentee.</li>
+    <li><strong>Student</strong>: the ring, the gold badge, and the classes the B-Plan contest credited.</li>
+    <li><strong>Student at risk</strong>: the red ring, and how many classes in a row it takes to recover.</li>
+    <li><strong>HOD</strong>: the real D2 BBA routine on Schedule. Cancel a day's classes in one tap, then undo it. Records, with flags and stars.</li>
+    <li><strong>Mentor</strong>: approve the Case Study Challenge requests; each student's credited period appears.</li>
+  </ol>
+  <h3>Between sessions</h3>
+  <p>Visitors change things. To put the college back as it was:</p>
+<pre><code>DATABASE_URL="…" npm run seed:demo -- --reset</code></pre>
+  <p>It only wipes a database that <code>seed:demo</code> created itself, and refuses any other. The history is dated back from the day it runs, so reset on the morning of the fest.</p>
+</section>
+
+<!-- ============================================================ 10 -->
+<section class="chapter" id="faq">
+  <h2><span class="num">10</span>Questions and fixes</h2>
+  <table>
+    <tr><th>What you see</th><th>What it means, and what to do</th></tr>
+    <tr><td>"The timetable has no class in that period for this section"</td><td>That period is empty on the timetable. The HOD fills it from Schedule.</td></tr>
+    <tr><td>"This class was cancelled…"</td><td>It was called off in advance. Whoever cancelled it, or the HOD, can restore it from Schedule.</td></tr>
+    <tr><td>"That period belongs to another teacher"</td><td>You can only mark classes the timetable gives you.</td></tr>
+    <tr><td>"The 48-hour edit window has closed"</td><td>Ask the HOD to correct it; the change is recorded with their name.</td></tr>
+    <tr><td>A class shows as <em>not marked</em></td><td>It was held but you have no mark. If you were there, ask the teacher to correct the register.</td></tr>
+    <tr><td>An event did not change my percentage</td><td>Open the event card: it says which periods were credited and why any were not.</td></tr>
+    <tr><td>"That teacher already has a class in this period"</td><td>The teacher is in another section then. Pick another teacher or period.</td></tr>
+    <tr><td>"Too many failed attempts"</td><td>Wait a few minutes, or ask for a password reset, which clears the lock at once.</td></tr>
+    <tr><td>My percentage went down although nothing changed</td><td>A class you were not marked for was held. Check <span class="ui">Not marked</span> under Analytics.</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ 11 -->
+<section class="chapter" id="glossary">
+  <h2><span class="num">11</span>Words used in the app</h2>
+  <table>
+    <tr><td><strong>Section</strong></td><td>A class group within a course, such as D2. Students, timetables and class teachers belong to a section.</td></tr>
+    <tr><td><strong>Period</strong></td><td>One slot in the day, such as period 1, 10:15–11:15.</td></tr>
+    <tr><td><strong>Register</strong></td><td>The attendance list for one class on one date.</td></tr>
+    <tr><td><strong>Held class</strong></td><td>A class whose register was taken. Attendance is counted against held classes.</td></tr>
+    <tr><td><strong>Not marked</strong></td><td>A held class with no mark for a student. Counts as missed.</td></tr>
+    <tr><td><strong>Cancelled class</strong></td><td>A class called off in advance. Never marked, never counted.</td></tr>
+    <tr><td><strong>Approved leave</strong></td><td>Leave a class teacher or the HOD approved. Left out of the percentage.</td></tr>
+    <tr><td><strong>Event credit</strong></td><td>A period marked present because the student took part in an event.</td></tr>
+    <tr><td><strong>Minimum</strong></td><td>The attendance percentage a course requires; 75% unless the HOD set another.</td></tr>
+    <tr><td><strong>Badge</strong></td><td>The gold 90%+ attendance recognition.</td></tr>
+    <tr><td><strong>Class teacher</strong></td><td>The teacher responsible for a section, who decides its leave requests.</td></tr>
+  </table>
+  <p class="downloads"><a class="primary" href="user-manual.pdf" download>Download this manual (PDF)</a></p>
+</section>
+
+</body>
+</html>
