@@ -1,0 +1,28 @@
+{
+  "name": "besc-attendance-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "dev": "node --watch src/main.js",
+    "migrate": "node src/infra/db/migrate.js",
+    "seed": "node src/infra/db/seed.js",
+    "test:e2e": "node test/e2e.mjs"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@fastify/jwt": "^8.0.0",
+    "@fastify/static": "^7.0.4",
+    "fastify": "^4.28.1",
+    "pg": "^8.12.0",
+    "zod": "^3.23.8",
+    "@vercel/blob": "^0.27.0"
+  },
+  "optionalDependencies": {
+    "@vercel/blob": "^0.27.0"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "besc-attendance",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "migrate": "node server/src/infra/db/migrate.js",
+    "seed": "node server/src/infra/db/seed.js",
+    "dev:api": "npm --prefix server run dev",
+    "dev:web": "npm --prefix web run dev",
+    "build": "npm --prefix web install && npm --prefix web run build",
+    "verify": "sh scripts/verify-all.sh"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@fastify/jwt": "^8.0.0",
+    "@fastify/multipart": "^8.3.0",
+    "@vercel/blob": "^2.8.0",
+    "fastify": "^4.28.1",
+    "pg": "^8.12.0",
+    "zod": "^3.23.8"
+  }
+}

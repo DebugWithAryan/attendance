@@ -1,0 +1,29 @@
+{
+  "name": "besc-attendance-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5173",
+    "build:test": "vite build --ssr test/smoke-entry.jsx --outDir dist-test",
+    "test:render": "npm run build:test && node test/render.mjs",
+    "test:interact": "npm run build:test && node test/interact.mjs",
+    "test:ui": "npm run build:test && node test/render.mjs && node test/interact.mjs && node test/journey.mjs",
+    "build:demo": "vite build --config vite.demo.config.js",
+    "test:demo": "vite build --ssr demo/smoke-entry.jsx --outDir dist-demo-ssr && node demo/render-demo.mjs",
+    "test:journey": "npm run build:test && node test/journey.mjs",
+    "test:first-run": "npm run build:test && node test/first-run.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8",
+    "jsdom": "^25.0.1",
+    "vite-plugin-singlefile": "^2.0.2"
+  }
+}

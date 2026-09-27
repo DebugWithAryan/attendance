@@ -1,0 +1,464 @@
+/* ==========================================================================
+   Attendance — visual system
+
+   Grounded in the thing it replaces: a bound attendance register. A ruled
+   sheet, a gutter down the left for roll numbers, a red margin rule, and a
+   decisive mark against each name. The register screen is where the boldness
+   is spent; every other surface stays quiet so the marks carry the meaning.
+
+   Colour is never the only signal — every attendance state also carries a
+   letter, and every flagged row also carries weight and a rule.
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  /* Ink and paper. The ink is a deep pine-slate rather than black: it reads as
+     written rather than printed, and keeps red and green legible beside it. */
+  --ink: #14322f;
+  --ink-2: #4a615d;
+  --ink-3: #7b908c;
+  --paper: #f2f5f2;
+  --surface: #ffffff;
+  --surface-2: #f8faf8;
+  --rule: #d7e0db;
+  --rule-strong: #b9c7c1;
+
+  /* The margin rule of a ledger page — the one decorative borrowing. */
+  --margin-rule: #c0483c;
+
+  /* Attendance states, paired with letters everywhere they appear. */
+  --present: #10685a;
+  --present-wash: #e4f0ec;
+  --absent: #b0342a;
+  --absent-wash: #fbeae8;
+  --leave: #8a6410;
+  --leave-wash: #f9f0dd;
+  --credit: #4b4396;
+  --credit-wash: #eceafa;
+
+  --focus: #14322f;
+
+  --r-sm: 4px;
+  --r-md: 8px;
+
+  /* Type scale, ~1.22 ratio, on a 4px spacing grid. */
+  --t-xs: 0.75rem;
+  --t-sm: 0.8125rem;
+  --t-base: 0.9375rem;
+  --t-md: 1.0625rem;
+  --t-lg: 1.3125rem;
+  --t-xl: 1.75rem;
+  --t-2xl: 2.5rem;
+
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+
+  --shadow-raise: 0 1px 2px rgba(20, 50, 47, 0.06), 0 8px 24px -12px rgba(20, 50, 47, 0.18);
+  --tap: 2.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8efec;
+    --ink-2: #a3b5b0;
+    --ink-3: #7c8e89;
+    --paper: #0d1917;
+    --surface: #132321;
+    --surface-2: #172b28;
+    --rule: #26403c;
+    --rule-strong: #35544f;
+    --margin-rule: #d2635a;
+
+    --present: #5cc4a9;
+    --present-wash: #123630;
+    --absent: #f08b80;
+    --absent-wash: #3a1f1c;
+    --leave: #d9ad5a;
+    --leave-wash: #362b14;
+    --credit: #a8a1ec;
+    --credit-wash: #241f45;
+
+    --focus: #e8efec;
+    --shadow-raise: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--t-base)/1.55 "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
+h1 { font-size: var(--t-xl); }
+h2 { font-size: var(--t-lg); }
+h3 { font-size: var(--t-md); }
+p { margin: 0 0 var(--s-3); max-width: 66ch; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+code { font-size: 0.9em; background: var(--surface-2); padding: 0 0.25em; border-radius: 3px; }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+
+.skip {
+  position: absolute; left: -999px; top: var(--s-2);
+  background: var(--surface); padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--ink); border-radius: var(--r-sm); z-index: 50;
+}
+.skip:focus { left: var(--s-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* ---------- shell ---------------------------------------------------- */
+.shell { display: grid; grid-template-columns: 15rem 1fr; min-height: 100%; }
+
+.rail {
+  background: var(--ink);
+  color: var(--paper);
+  padding: var(--s-5) var(--s-3) var(--s-3);
+  display: flex; flex-direction: column; gap: var(--s-5);
+  position: sticky; top: 0; height: 100vh;
+}
+@media (prefers-color-scheme: dark) {
+  .rail { background: var(--surface); border-right: 1px solid var(--rule); }
+}
+
+.rail .brand { padding: 0 var(--s-2); }
+.rail .brand strong { display: block; font-size: var(--t-md); font-weight: 600; letter-spacing: -0.02em; }
+.rail .brand span { color: #9fb5b0; font-size: var(--t-sm); }
+@media (prefers-color-scheme: dark) { .rail .brand span { color: var(--ink-3); } }
+
+.rail nav { display: flex; flex-direction: column; gap: 1px; }
+.rail nav a {
+  position: relative;
+  color: #c6d6d1;
+  text-decoration: none;
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+  border-radius: var(--r-sm);
+  font-size: var(--t-base);
+  display: flex; align-items: center; gap: var(--s-2);
+}
+@media (prefers-color-scheme: dark) { .rail nav a { color: var(--ink-2); } }
+.rail nav a:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.rail nav a[aria-current="page"] { background: rgba(255, 255, 255, 0.1); color: #fff; font-weight: 500; }
+
+/* Current page marked like a tab cut into a register, not a filled pill. */
+.rail nav a[aria-current="page"]::before {
+  content: ""; position: absolute; left: 0; top: 18%; bottom: 18%;
+  width: 3px; border-radius: 0 2px 2px 0; background: var(--margin-rule);
+}
+
+.rail .count {
+  margin-left: auto; font-size: var(--t-xs); font-weight: 600;
+  background: var(--margin-rule); color: #fff;
+  border-radius: 999px; padding: 0 0.4em; min-width: 1.4em; text-align: center;
+}
+
+.rail .who {
+  margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.16);
+  padding: var(--s-3) var(--s-2) 0; font-size: var(--t-sm); color: #9fb5b0;
+}
+.rail .who strong { display: block; color: #fff; font-weight: 500; }
+
+.main { min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-3) var(--s-5);
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface);
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar .spacer { flex: 1; }
+.content { padding: var(--s-5); max-width: 78rem; width: 100%; }
+
+.page-head {
+  display: flex; align-items: flex-end; gap: var(--s-4); flex-wrap: wrap;
+  margin-bottom: var(--s-5); padding-bottom: var(--s-3);
+  border-bottom: 2px solid var(--ink);
+}
+.page-head h1 { flex: 0 0 auto; }
+.page-head p { color: var(--ink-2); margin: 0; font-size: var(--t-base); }
+
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .rail {
+    position: fixed; bottom: 0; left: 0; right: 0; top: auto; height: auto;
+    flex-direction: row; align-items: center; gap: var(--s-2);
+    padding: var(--s-2) var(--s-2) calc(var(--s-2) + env(safe-area-inset-bottom, 0px));
+    overflow-x: auto; z-index: 20; border-top: 1px solid var(--rule);
+  }
+  .rail .brand, .rail .who { display: none; }
+  .rail nav { flex-direction: row; gap: var(--s-1); }
+  .rail nav a { white-space: nowrap; min-height: var(--tap); padding-left: var(--s-3); }
+  .rail nav a[aria-current="page"]::before {
+    top: auto; bottom: 0; left: 12%; right: 12%; width: auto; height: 3px;
+    border-radius: 2px 2px 0 0;
+  }
+  .content { padding: var(--s-4) var(--s-4) 5.5rem; }
+  .topbar { padding: var(--s-3) var(--s-4); }
+  .page-head { margin-bottom: var(--s-4); }
+}
+
+/* ---------- panels --------------------------------------------------- */
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
+.panel > header {
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
+}
+.panel > header h3 { flex: 1 1 auto; }
+.panel .body { padding: var(--s-4); }
+
+.stack { display: flex; flex-direction: column; gap: var(--s-5); }
+.row { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: flex-end; }
+.grid-2 { display: grid; gap: var(--s-5); grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+.scroll-x { overflow-x: auto; }
+
+/* ---------- tables --------------------------------------------------- */
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--rule); }
+th {
+  font-weight: 600; font-size: var(--t-sm); color: var(--ink-2);
+  position: sticky; top: 0; background: var(--surface); z-index: 1;
+}
+td.num, th.num { text-align: right; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--surface-2); }
+
+/* Under the minimum: a red margin rule and heavier type, not colour alone. */
+tr.flagged td { background: var(--absent-wash); }
+tr.flagged td:first-child { box-shadow: inset 3px 0 0 var(--margin-rule); font-weight: 600; }
+
+.figure {
+  font-size: var(--t-2xl); font-weight: 600; line-height: 1;
+  letter-spacing: -0.03em; font-variant-numeric: tabular-nums lining-nums;
+}
+.figure.low { color: var(--absent); }
+.label { color: var(--ink-2); font-size: var(--t-sm); }
+
+/* ---------- attendance ring ------------------------------------------ */
+.ring {
+  --value: 0;
+  --tone: var(--present);
+  width: 7.5rem; height: 7.5rem; border-radius: 50%;
+  display: grid; place-items: center; flex: 0 0 auto;
+  background: conic-gradient(var(--tone) calc(var(--value) * 1%), var(--rule) 0);
+  position: relative;
+}
+.ring::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--surface); }
+.ring > * { position: relative; z-index: 1; text-align: center; }
+.ring .figure { font-size: var(--t-xl); }
+
+/* ---------- chips ---------------------------------------------------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 0.3em;
+  padding: 0.1rem 0.5rem; border-radius: 999px;
+  font-size: var(--t-xs); font-weight: 600; border: 1px solid transparent;
+}
+.chip.present, .chip.approved { background: var(--present-wash); color: var(--present); border-color: var(--present); }
+.chip.absent, .chip.rejected { background: var(--absent-wash); color: var(--absent); border-color: var(--absent); }
+.chip.leave { background: var(--leave-wash); color: var(--leave); border-color: var(--leave); }
+.chip.credit, .chip.event_credit { background: var(--credit-wash); color: var(--credit); border-color: var(--credit); }
+.chip.pending { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
+
+/* ---------- controls -------------------------------------------------- */
+label.field { display: flex; flex-direction: column; gap: var(--s-1); font-size: var(--t-sm); color: var(--ink-2); }
+
+input, select, textarea {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--rule-strong); border-radius: var(--r-sm);
+  padding: 0.45rem 0.55rem; min-height: var(--tap);
+}
+input:hover, select:hover, textarea:hover { border-color: var(--ink-3); }
+textarea { min-height: 5rem; resize: vertical; line-height: 1.5; }
+input[type="checkbox"] { min-height: 0; width: 1.1rem; height: 1.1rem; accent-color: var(--ink); }
+
+button {
+  font: inherit; font-weight: 500; cursor: pointer;
+  background: var(--ink); color: var(--paper);
+  border: 1px solid var(--ink); border-radius: var(--r-sm);
+  padding: 0.45rem 0.9rem; min-height: var(--tap);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+button:hover:not(:disabled) { background: #0d211f; }
+@media (prefers-color-scheme: dark) {
+  button { background: var(--present); border-color: var(--present); color: #06201b; }
+  button:hover:not(:disabled) { background: #74d6bd; }
+}
+
+button.quiet { background: var(--surface); color: var(--ink); border-color: var(--rule-strong); }
+button.quiet:hover:not(:disabled) { background: var(--surface-2); border-color: var(--ink-3); }
+button.link {
+  background: none; border: 0; color: var(--ink); padding: 0; min-height: 0;
+  text-decoration: underline; text-underline-offset: 3px; font-weight: 400;
+}
+button.link:hover:not(:disabled) { background: none; color: var(--ink-2); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------- the register --------------------------------------------- */
+.register { display: flex; flex-direction: column; }
+
+.register .line {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr auto;
+  align-items: center; gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  border-bottom: 1px solid var(--rule);
+  /* the gutter rule of a ruled page */
+  background-image: linear-gradient(var(--rule-strong), var(--rule-strong));
+  background-size: 1px calc(100% - 0.5rem);
+  background-position: 3.9rem 0.25rem;
+  background-repeat: no-repeat;
+}
+.register .line:last-child { border-bottom: 0; }
+.register .line .roll { font-weight: 600; font-variant-numeric: tabular-nums; }
+.register .line .who { min-width: 0; }
+.register .line .who small { display: block; color: var(--ink-2); font-size: var(--t-sm); }
+
+.register .line.is-present { background-color: var(--present-wash); }
+.register .line.is-absent { background-color: var(--absent-wash); }
+.register .line.is-leave { background-color: var(--leave-wash); }
+.register .line.is-credited { background-color: var(--credit-wash); }
+.register .line.unmarked .who small { color: var(--ink-3); }
+
+/* Three stamps, big enough to hit while standing in front of a class. */
+.marks { display: flex; gap: 2px; }
+.marks button {
+  background: var(--surface); color: var(--ink-2);
+  border: 1px solid var(--rule-strong);
+  min-width: 3rem; padding: 0.4rem 0.5rem; border-radius: 0;
+  font-weight: 600; font-size: var(--t-md);
+}
+.marks button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
+.marks button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.marks button[aria-pressed="true"] { color: #fff; }
+.marks button[aria-pressed="true"][data-status="present"] { background: var(--present); border-color: var(--present); }
+.marks button[aria-pressed="true"][data-status="absent"] { background: var(--absent); border-color: var(--absent); }
+.marks button[aria-pressed="true"][data-status="leave"] { background: var(--leave); border-color: var(--leave); }
+
+.savebar {
+  position: sticky; bottom: 0;
+  background: var(--surface); border-top: 2px solid var(--ink);
+  padding: var(--s-3) var(--s-4);
+  display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
+  border-radius: 0 0 var(--r-md) var(--r-md);
+}
+.savebar .tally { flex: 1 1 12rem; color: var(--ink-2); }
+.savebar .tally strong { color: var(--ink); }
+
+/* How far through the class the teacher is. */
+.progress { height: 4px; background: var(--rule); border-radius: 999px; overflow: hidden; margin-top: var(--s-1); }
+.progress > span { display: block; height: 100%; background: var(--present); }
+
+@media (max-width: 860px) {
+  .register .line {
+    grid-template-columns: 3.25rem 1fr;
+    grid-template-areas: "roll who" "marks marks";
+    row-gap: var(--s-2); padding: var(--s-3);
+    background-image: none;
+  }
+  .register .line .roll { grid-area: roll; }
+  .register .line .who { grid-area: who; }
+  .register .line .marks { grid-area: marks; }
+  .marks { width: 100%; }
+  .marks button { flex: 1; min-height: 3rem; }
+  .savebar { bottom: 4.25rem; }
+}
+
+/* ---------- timetable -------------------------------------------------- */
+.timetable { border-collapse: separate; border-spacing: 3px; }
+.timetable td, .timetable th { border: 0; padding: var(--s-2); border-radius: var(--r-sm); }
+.timetable th { position: static; background: none; }
+.timetable td { background: var(--surface-2); color: var(--ink-3); font-size: var(--t-sm); }
+.timetable td.mine { background: var(--ink); color: var(--paper); }
+@media (prefers-color-scheme: dark) { .timetable td.mine { background: var(--present); color: #06201b; } }
+.timetable td.mine small { color: #b9cdc8; }
+.timetable td small { display: block; font-size: var(--t-xs); }
+.timetable td.empty { background: transparent; }
+
+/* ---------- notices, feeds, empties ------------------------------------ */
+.notice {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink);
+  border-radius: var(--r-sm);
+  padding: var(--s-3);
+  background: var(--surface);
+}
+.notice.bad { border-left-color: var(--absent); background: var(--absent-wash); }
+.notice.good { border-left-color: var(--present); background: var(--present-wash); }
+
+.empty {
+  color: var(--ink-2); padding: var(--s-6) var(--s-4); text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: var(--s-3);
+}
+.empty p { margin: 0; }
+
+.feed { display: flex; flex-direction: column; }
+.feed li { list-style: none; padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule); }
+.feed li:last-child { border-bottom: 0; }
+.feed li.unread { box-shadow: inset 3px 0 0 var(--margin-rule); }
+.feed time, .feed .meta { color: var(--ink-2); font-size: var(--t-sm); }
+ul.plain { list-style: none; margin: 0; padding: 0; }
+
+/* What the HOD must finish before anyone can mark a register. */
+.checklist { display: flex; flex-direction: column; gap: 1px; }
+.checklist li {
+  list-style: none; display: flex; gap: var(--s-3); align-items: baseline;
+  padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule);
+}
+.checklist li:last-child { border-bottom: 0; }
+.checklist .mark { font-weight: 600; color: var(--ink-3); min-width: 1.5rem; }
+.checklist li.done .mark { color: var(--present); }
+.checklist li.done .what { color: var(--ink-2); }
+.checklist li.next { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--margin-rule); }
+.checklist .what { flex: 1; }
+.checklist .why { display: block; color: var(--ink-2); font-size: var(--t-sm); }
+
+/* ---------- loading ---------------------------------------------------- */
+.skeleton {
+  display: block; height: 0.75rem; border-radius: 999px;
+  background: linear-gradient(90deg, var(--rule) 25%, var(--surface-2) 37%, var(--rule) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+.loading-block { padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); }
+
+/* ---------- login ------------------------------------------------------- */
+.login { display: grid; place-items: center; min-height: 100%; padding: var(--s-5); }
+.login .panel { width: min(24rem, 100%); box-shadow: var(--shadow-raise); overflow: hidden; }
+.login .bar { height: 6px; background: var(--ink); }
+.login .bar::after { content: ""; display: block; height: 6px; width: 2.5rem; background: var(--margin-rule); }
+
+/* ---------- print --------------------------------------------------------
+   The PDF export is the browser's own "Save as PDF". A server-side renderer
+   would add a megabyte to a serverless function to reproduce a table the
+   browser can already paginate. */
+@media print {
+  .rail, .topbar, .page-head button, .panel > header button, .row button,
+  label.field, .savebar, .notice, .skip { display: none !important; }
+  .shell { display: block; }
+  .content { padding: 0; max-width: none; }
+  .panel { border: 0; break-inside: auto; }
+  .panel > header { border-bottom: 1px solid #000; }
+  table { font-size: 11pt; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; }
+  tr.flagged td { background: none; font-weight: 700; }
+  tr.flagged td:first-child::before { content: "! "; }
+  a[href]::after { content: ""; }
+  @page { margin: 14mm; }
+}
