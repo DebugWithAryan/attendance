@@ -1,0 +1,11 @@
+# What `vercel deploy` leaves behind when it uploads this folder from a laptop.
+# Local secrets and uploaded certificates must never reach a deployment, and
+# the build recreates everything else listed here.
+.env
+.env.*
+/var
+node_modules
+/web/dist
+/web/dist-test
+/web/dist-demo
+/web/dist-demo-ssr
