@@ -104,19 +104,45 @@ export JWT_SECRET="$(openssl rand -hex 32)"
 npm run verify
 ```
 
-**Expected, and nothing less:**
+**Expected, and nothing less.** Each suite prints a line per check as well;
+these are the lines that matter, in this order:
 
 ```
 --- schema
+applied 001_init.sql
+applied 002_triggers.sql
+applied 003_login_attempts.sql
+applied 004_private_documents.sql
+applied 005_admin_role.sql
+applied 006_timetable_sessions.sql
+applied 007_demo_accounts.sql
+migrations up to date
 --- serverless entry on :4001
 {"ok":true,"env":"development","serverless":true}
+--- first-run suite (empty database)
+7 passed, 0 failed
+--- seed
 --- API suite
-64 passed, 0 failed
+83 passed, 0 failed
 --- UI suites
-33 pages rendered, 0 failed
+51 pages rendered, 0 failed
 13 passed, 0 failed
-30 passed, 0 failed
+35 passed, 0 failed
+--- administrator suite
+18 passed, 0 failed
+--- timetable, cancellation, classes held, badge, event attendance, routine import
+69 passed, 0 failed
+21 passed, 0 failed
+--- demo college skipped: set DEMO_DATABASE_URL to an empty database to include it
 --- all suites passed
+```
+
+To include the tech fest demo college as well, point `DEMO_DATABASE_URL` at a
+second, empty database before `npm run verify`. It adds one more suite:
+
+```
+--- demo college (DEMO_MODE on :4002)
+30 passed, 0 failed
 ```
 
 **If any suite fails, stop here and report the failing assertion.** Do not
@@ -260,9 +286,9 @@ to yesterday's date.
 Do not set `VERCEL` — the platform sets it, and that flag is what switches the
 pool to one connection per instance and turns off local disk storage.
 
-Check the region: `vercel.json` pins `regions: ["bom1"]` (Mumbai). If the
-database went somewhere else, edit that line to match — `sin1` for Singapore —
-and commit the change.
+Check the region: `vercel.json` pins `regions: ["sin1"]` (Singapore), because
+Neon has no Mumbai region. If the database went somewhere else, edit that line
+to match and commit the change.
 
 **Verify:**
 
@@ -275,11 +301,17 @@ vercel env ls
 
 ## Phase 7 — Create the schema and the first real account
 
-Migrations run **from the owner's machine**, never from the deployed function. A
-deploy hook that migrates concurrently across instances is a good way to corrupt
-a schema.
+Every **production** build migrates the database before the new version goes
+live (`scripts/vercel-build.sh`, the `buildCommand` in `vercel.json`). It runs
+once per build, never from the deployed function, and each migration takes a
+Postgres advisory lock, so two builds at once queue up instead of colliding. If
+a migration fails, the build fails and the site stays on the previous version.
+Preview builds never touch the database.
 
-Get the connection string:
+So after Phase 6, redeploy (Deployments → the latest → Redeploy) and the schema
+is created. The build log shows the lines listed under **Expected** below.
+
+To migrate by hand instead, from the owner's machine, get the connection string:
 
 ```bash
 vercel env pull .env.production.local
@@ -300,8 +332,14 @@ applied 001_init.sql
 applied 002_triggers.sql
 applied 003_login_attempts.sql
 applied 004_private_documents.sql
+applied 005_admin_role.sql
+applied 006_timetable_sessions.sql
+applied 007_demo_accounts.sql
 migrations up to date
 ```
+
+On a database that is already up to date, only the last line appears. Running
+it again is always safe.
 
 Now create the one account the system starts with. **No demo data** — this is a
 real deployment, so the database stays empty apart from a single HOD who builds
@@ -453,7 +491,7 @@ The order matters. Each step depends on the one before it.
 | 3 | Setup → **Subjects** | The timetable assigns a subject to each period |
 | 4 | Setup → Accounts → **Teachers** | The timetable assigns a teacher to each period, so they must exist before step 6 |
 | 5 | Setup → **Allocation**: one class teacher per section | Leave requests route to the class teacher. Skip this and only the HOD sees them |
-| 6 | Schedule → pick the course → **fill the grid** | Six days, up to 8 periods. A teacher cannot hold two sections in the same day-and-period — the server rejects it, which is the check working, not an error |
+| 6 | Schedule → pick the course → **Timings**, then **fill the grid** | Timings sets the week first: how many days the course teaches, how many periods a day (up to 12), each period's time, the break and after-hours. Then tap each period to give it a subject and a teacher. A teacher cannot hold two sections in the same day-and-period — the server rejects it, which is the check working, not an error. A printed routine can be loaded in one go instead: write it as JSON like `server/src/infra/db/timetables/d2-bba.json` and run `npm run timetable:import -- <file>` with `DATABASE_URL` set (`--dry-run` first) |
 | 7 | Setup → **Minimum attendance %** per course | Without it, every course silently falls back to 75% |
 | 8 | Setup → Accounts → **Students** | One at a time, or **Bulk import** — pick the course and section in the form, then paste `roll_number,name,login_id,password`, one student per line. Rejected rows come back with line numbers; fix and paste again. Roll numbers are unique inside a section, login IDs across the college |
 | 9 | Setup → Accounts → **Mentors**, if the college runs clubs | Only mentors can create clubs and credit-bearing events |
@@ -461,7 +499,7 @@ The order matters. Each step depends on the one before it.
 Tick these off before handing the URL to staff:
 
 - [ ] Every section has a class teacher
-- [ ] Every section's timetable grid is filled for all six days
+- [ ] Every section's timetable grid is filled for every day its course teaches
 - [ ] Each course has an explicit minimum percentage
 - [ ] One teacher has signed in and can see their own classes highlighted on the
       Schedule page, and can load a roster on the Attendance page
@@ -490,6 +528,9 @@ history with it.
 | `JWT_SECRET is required in production` in the logs | Variable not set for the Production environment specifically | Re-add it with Production ticked |
 | `too many clients already` | Unpooled connection string | Use the `-pooler` host; set it as `DATABASE_URL_POOLED` |
 | `relation "users" does not exist` | Migrations never ran against this database | Phase 7 |
+| Build fails: `No DATABASE_URL in the production build environment` | The production build migrates, and cannot see the database | Add `DATABASE_URL` for Production in Settings → Environment Variables, redeploy |
+| Build fails: `migration 00n_… failed: …` | A migration hit something in the data | The site stays on the previous version and nothing was half-applied. Report the message; do not edit the migration to force it through |
+| A preview deployment errors with `relation "class_sessions" does not exist` | Previews never migrate, and this preview shares a database that production has not migrated yet | Expected until the change reaches `main`; or give Preview its own database |
 | Login works, every other call 401s | Two deployments with different `JWT_SECRET`s | Set it once, redeploy both |
 | Certificate upload fails | No `BLOB_READ_WRITE_TOKEN`, or `STORAGE_DRIVER` is not `blob` | Phase 5 and 6 |
 | Deep links like `/records` 404 on refresh | `vercel.json` rewrites were edited | Restore the `/((?!api/).*) → /index.html` rewrite |
@@ -506,7 +547,10 @@ Logs: `vercel logs <deployment-url>` or the Vercel dashboard → Logs tab.
 vercel rollback          # previous deployment becomes production
 ```
 
-The database is not touched by a rollback. A migration is not reversible here —
+The database is not touched by a rollback. The migrations are written so the
+previous version keeps working against the newer schema (they add tables,
+columns and triggers, and relax a foreign key, never tighten one), so a
+rollback after a migrating deploy is safe. A migration is not reversible here —
 if one goes wrong, restore from Neon's point-in-time recovery (Neon dashboard →
 Restore), which the free tier keeps for 24 hours.
 

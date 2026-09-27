@@ -34,17 +34,30 @@ NODE_ENV        = production
 STORAGE_DRIVER  = blob
 ```
 
+Optional: `BADGE_THRESHOLD` (default 90) is the percentage that earns a student
+the attendance badge. `DEMO_MODE` belongs only on a demo deployment; see below.
+
 `VERCEL=1` is set by the platform, which is what switches the pool to one
 connection per instance and turns off local disk storage.
 
-**5. Create the schema.** Migrations run from your machine, not from the
-function — a deploy hook that migrates concurrently across instances is a good
-way to corrupt a schema.
+**5. The schema creates itself.** Every production build runs
+`scripts/vercel-build.sh`, which migrates the database before building the web
+app. It runs once per build, never from the function, and each migration holds
+a Postgres advisory lock, so two builds at once queue instead of colliding. It
+uses `DATABASE_URL_UNPOOLED` when the Neon integration provides it, and
+`DATABASE_URL` otherwise. A failed migration fails the build, and Vercel keeps
+serving the previous deployment. Preview builds never touch the database.
+
+Migrations are written so the version still serving keeps working while a new
+one builds: they add tables, columns and triggers, and never tighten a
+constraint.
+
+To load the sample department instead of starting empty, from your machine:
 
 ```bash
-export DATABASE_URL="<the pooled Neon string from Vercel>"
-npm run migrate
-npm run seed        # demo department; skip on a real deployment
+export DATABASE_URL="<the unpooled Neon string from Vercel>"
+npm run migrate     # safe to repeat; a no-op once the build has run it
+npm run seed        # sample department; skip on a real deployment
 ```
 
 For a real deployment, skip the seed. The first account is created from the
@@ -62,6 +75,43 @@ single administrator who loses their password would otherwise need
 
 **6. Deploy.** Every push to `main` ships. `https://<project>.vercel.app` serves
 the app; `/api/health` should return `{"ok":true,"serverless":true}`.
+
+## A demo deployment for a tech fest
+
+Give the demo its own Vercel project and its own Neon database, never the
+college's. Import the same repository a second time, add Neon to it, then:
+
+1. Set `JWT_SECRET`, `NODE_ENV=production` and **`DEMO_MODE=1`** on the demo
+   project only. `DEMO_MODE` turns on one-tap sign-in for the demo accounts, so
+   on a real deployment it would let anyone in as a demo HOD.
+2. Deploy. The production build creates the tables.
+3. From your machine, fill it with the demo college:
+
+   ```bash
+   export DATABASE_URL="<the demo project's unpooled Neon string>"
+   npm run seed:demo           # prints the demo accounts
+   ```
+
+   It refuses a database that already has accounts, and `--reset` only wipes
+   a database it created itself, so it cannot overwrite real data by mistake.
+4. Between sessions, or on the morning of the fest (the history is dated back
+   from the day it runs):
+
+   ```bash
+   npm run seed:demo -- --reset
+   ```
+
+Every demo account uses `demo1234`, and nobody can change, reset or remove
+them. Print the QR poster from **Guide** for the stall; it opens `/welcome`.
+
+## The user manual
+
+`web/public/user-manual.html` and `web/public/user-manual.pdf` ship with the
+site at `/user-manual.html` and `/user-manual.pdf`, and the sign-in page,
+introduction page and Guide link to them. After changing a screen, regenerate
+the screenshots and the PDF with the steps at the top of
+`scripts/manual/screenshots.mjs`; after changing only the text, run
+`node scripts/manual/pdf.mjs`. Both use a headless Chromium.
 
 ## How it fits together
 
@@ -81,7 +131,15 @@ CORS to configure and no preflight request before each call.
 ```bash
 node scripts/vercel-sim.mjs                              # serves api/index.js the way Vercel calls it, with VERCEL=1
 API_BASE=http://127.0.0.1:4001/api node server/test/e2e.mjs    # 83 API assertions
-cd web && API_ORIGIN=http://127.0.0.1:4001 npm run test:ui     # 50 pages + 13 interactions, real UI in jsdom
+cd web && API_ORIGIN=http://127.0.0.1:4001 npm run test:ui     # 51 pages + 13 interactions + the 35-step journey, real UI in jsdom
+```
+
+`npm run verify` runs all of it, and the feature suites, from an empty database.
+To rehearse the production build itself:
+
+```bash
+VERCEL_ENV=production DATABASE_URL=… sh scripts/vercel-build.sh   # migrates, then builds web/dist
+VERCEL_ENV=preview sh scripts/vercel-build.sh                     # builds only
 ```
 
 All of these pass through this path with `VERCEL=1` set, which is the

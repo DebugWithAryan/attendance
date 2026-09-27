@@ -5,7 +5,10 @@ first one, which the deployment hands out to itself.
 
 There is the same guide inside the app, under **Guide** in the sidebar, showing
 only the steps for whoever is signed in. This page is the version you can print
-and hand round before anyone has logged in.
+and hand round before anyone has logged in. The illustrated user manual, with a
+screenshot of every screen, is on the site at `/user-manual.pdf`, and the
+introduction page at `/welcome` explains the app to someone who has never seen
+it. **Guide** shows a QR code for that page and prints it as a poster.
 
 ---
 
@@ -38,6 +41,7 @@ You run the accounts. You do not teach, and you do not build timetables.
 | Ask them to change it from Profile | — | You have seen and said their password out loud. |
 | Create a second administrator | Accounts | So one lost password is not the end. |
 | Reset passwords when people are locked out | Accounts | Six wrong attempts locks an account; a reset clears it. |
+| Print the QR poster | Guide | Anyone who scans it lands on the introduction page. |
 
 You can also create teachers and mentors. You cannot create students: a student
 has to be placed in a course and a section, which is the HOD's job and has a
@@ -53,8 +57,13 @@ on each other — the Overview page tracks how far along you are.
 3. **Create teacher accounts.**
 4. **Allocate a class teacher to each section.** Leave requests route to them;
    without one, only you see them.
-5. **Fill each section's timetable.** Nobody can mark a register until the grid
-   exists.
+5. **Set the week, then fill each section's timetable.** On **Schedule**, tap
+   **Timings** to say how many days the course teaches (Monday to Friday, say),
+   how many periods a day, the time of each period, the break, and what
+   happens after classes. Then tap any period, empty or not, to give it a
+   subject and a teacher. Nobody can mark a register until the grid exists. A
+   printed routine can be loaded in one go by whoever runs the deployment
+   (`npm run timetable:import`).
 6. **Set the minimum attendance percentage.** Without it, everything falls back
    to 75%.
 7. **Add students,** one at a time or by pasting a CSV.
@@ -62,25 +71,39 @@ on each other — the Overview page tracks how far along you are.
 After that, the job is deciding leave and watching **Records** for anyone
 drifting below the minimum while there is still time to fix it.
 
+**Cancelling classes.** For a holiday, a strike or a fest, tap **Cancel
+classes** on the Overview or on Schedule, pick the date and, if it is not the
+whole college, the section or the periods. One tap cancels them all, and every
+student and teacher affected is told. A cancelled class cannot be marked and
+counts for nobody. If plans change, **Undo** straight after, or **restore** in
+the list of cancelled classes, puts every class back. An event open to all
+students has the same button on the event itself, for the periods it covers.
+
 ## Teacher
 
 1. **Open Attendance.** Your periods for today are already listed, and everyone
-   starts marked present — you tap the absentees.
+   starts marked present — you tap the absentees. Saving the register is what
+   records the class as held for every student in the section.
 2. **Corrections within 48 hours** are yours. After that the HOD makes them, and
    the change is recorded against their name with a reason.
 3. **Decide leave** for the section you are class teacher of. Approving writes
    leave across every period of that day.
 4. **Export a register** as CSV when someone needs proof.
+5. **Cancel your own classes** in one tap from the Overview when you know in
+   advance you cannot take them. Your students are told, and **Undo** or
+   **restore** brings the classes back.
 
 ## Student
 
 1. **Check where you stand** on Analytics. The ring is your percentage against
-   the minimum for your course.
+   the minimum for your course. At 90% or above you earn the attendance badge;
+   below it, the Overview tells you how many classes in a row would earn it.
 2. **Apply for leave** on the Leave desk, attaching a medical certificate. The
    certificate is never a public link — only your class teacher and the HOD can
    open it, and the system records who did.
 3. **Join events** that credit attendance. A club event during a period can
-   cover that absence.
+   cover that absence. Events shows which of your periods each event credited,
+   and says why if one could not be.
 4. **Change the password you were given.** Whoever created your account knows
    what it currently is.
 
@@ -95,6 +118,29 @@ not tell you how many you can afford to skip.
    added.
 3. **Set a credit period** when the event replaces a class. That is what turns
    an absence into a credited attendance.
+4. **Give students their attendance.** Approve their join requests, or tap
+   **Add attendance** and paste the login IDs of everyone who took part. Their
+   periods are credited at once and their teachers are told.
+5. **If everyone is going,** ask the HOD to cancel the classes the event
+   replaces. They can do it from the event itself.
+
+---
+
+## How attendance is counted
+
+A class counts once its register is taken. From then on it counts for every
+student in the section, marked or not:
+
+```
+percentage = present / (present + absent + not marked)
+```
+
+- **Not marked** is a class held for your section with no mark for you. It
+  counts against you, because the class happened.
+- **Approved leave** leaves the sum entirely, so an approved absence never
+  lowers anyone's percentage.
+- **A cancelled class** was never held, so it appears nowhere.
+- **An event credit** counts as present for the period it covered.
 
 ---
 
